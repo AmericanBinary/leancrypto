@@ -51,6 +51,10 @@ struct lc_gcm_ctx {
 
 	uint8_t rem_aad_inserted : 1; // Was remaining AAD inserted?
 	uint8_t external_iv : 1; // Was an external IV provided?
+
+	uint64_t det_iv_counter; // last deterministic IV invocation field
+	uint8_t det_iv_fixed[4]; // fixed field bound to this context
+	uint8_t det_iv_used : 1; // deterministic IV construction in use
 };
 
 struct lc_aes_gcm_cryptor {
@@ -92,6 +96,7 @@ int lc_aes_gcm_alloc(struct lc_aead_ctx **ctx);
 
 enum lc_aes_gcm_iv_type {
 	lc_aes_gcm_iv_generate_new,
+	lc_aes_gcm_iv_deterministic,
 };
 
 /**
@@ -108,10 +113,29 @@ enum lc_aes_gcm_iv_type {
  * \note If this API is to be used, it *must* be invoked after the API call of
  * lc_aead_setkey.
  *
+ * IV generation types:
+ *
+ * * lc_aes_gcm_iv_generate_new: RBG-based construction as defined by
+ *   SP 800-38D section 8.2.2 - the random field is generated with the
+ *   internal fully seeded DRNG. In FIPS mode, the entire IV is generated
+ *   by the DRNG, i.e. no fixed field is permissible.
+ *
+ * * lc_aes_gcm_iv_deterministic: Deterministic construction as defined by
+ *   SP 800-38D section 8.2.1 - the caller provides the complete IV via the
+ *   fixed_field parameter with fixed_field_len == ivlen. The leading
+ *   (ivlen - 8) bytes form the fixed field and the trailing 8 bytes form
+ *   the invocation field interpreted as a little-endian counter. The
+ *   context enforces the IV uniqueness requirement of SP 800-38D section
+ *   8.3 for a given key: the fixed field is bound to the context on first
+ *   use and the invocation field must be strictly increasing. A violation
+ *   marks the IV state unusable for encryption and returns -EINVAL. The
+ *   IV construction must be performed within the same cryptographic
+ *   module boundary that encompasses this library.
+ *
  * @param [in] ctx GCM context to set IV with
  * @param [in] fixed_field Fixed field data
  * @param [in] fixed_field_len Length of fixed field
- * @param [out] iv buffer with fixed_field || random number
+ * @param [out] iv buffer with the IV set to the GCM state
  * @param [in] ivlen of the IV to be generated - the minimum length is 12
  * @param [in] type IV generation type
  *
