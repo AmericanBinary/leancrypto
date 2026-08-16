@@ -45,6 +45,15 @@ static void sha384_final_arm_ce(void *_state, uint8_t *digest)
 	LC_NEON_DISABLE;
 }
 
+static void sha512_256_final_arm_ce(void *_state, uint8_t *digest)
+{
+	struct lc_sha512_state *ctx = _state;
+
+	LC_NEON_ENABLE;
+	lc_sha512_256_final(ctx, digest, sha512_block_armv8ce);
+	LC_NEON_DISABLE;
+}
+
 static void sha512_final_arm_ce(void *_state, uint8_t *digest)
 {
 	struct lc_sha512_state *ctx = _state;
@@ -89,3 +98,21 @@ static const struct lc_hash _sha512_arm_ce = {
 };
 
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_arm_ce) = &_sha512_arm_ce;
+
+static const struct lc_hash _sha512_256_arm_ce = {
+	.init = lc_sha512_256_init,
+	.init_nocheck = lc_sha512_256_init_nocheck,
+	.update = sha512_update_arm_ce,
+	.final = sha512_256_final_arm_ce,
+	.set_digestsize = NULL,
+	.get_digestsize = lc_sha512_256_get_digestsize,
+	.sponge_permutation = NULL,
+	.sponge_add_bytes = NULL,
+	.sponge_extract_bytes = lc_sha512_extract_bytes,
+	.sponge_newstate = NULL,
+	.sponge_rate = LC_SHA512_256_SIZE_BLOCK,
+	.statesize = sizeof(struct lc_sha512_state),
+	.algorithm_type = LC_ALG_STATUS_SHA512
+};
+
+LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_256_arm_ce) = &_sha512_256_arm_ce;

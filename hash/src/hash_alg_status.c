@@ -24,6 +24,7 @@ uint64_t lc_hash_is_fips_eligible(const struct lc_hash *hash)
 	    hash == lc_sha3_512 || hash == lc_shake128 || hash == lc_shake256 ||
 	    hash == lc_cshake128 || hash == lc_cshake256 ||
 	    hash == lc_shake128 || hash == lc_sha256 || hash == lc_sha384 ||
+	    hash == lc_sha512_256 ||
 	    hash == lc_sha512 || hash == lc_ascon_256 || hash == lc_ascon_xof)
 		return LC_ALG_STATUS_FIPS;
 	return 0;

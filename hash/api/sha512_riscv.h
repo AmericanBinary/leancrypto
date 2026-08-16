@@ -26,6 +26,7 @@ extern "C" {
 
 extern const struct lc_hash *lc_sha384_riscv;
 extern const struct lc_hash *lc_sha512_riscv;
+extern const struct lc_hash *lc_sha512_256_riscv;
 
 #ifdef __cplusplus
 }

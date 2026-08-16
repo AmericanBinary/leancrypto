@@ -23,3 +23,4 @@
 
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha384_shani) = NULL;
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_shani) = NULL;
+LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_256_shani) = NULL;
