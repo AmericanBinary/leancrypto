@@ -85,12 +85,22 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
-	/* Counter regression must be rejected */
+	/*
+	 * An unused counter within the trailing window is accepted once
+	 * (out-of-order encryption pipeline), a second use is rejected.
+	 */
+	det_iv_fill(iv, fixed_a, 0);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: unused window counter rejected\n");
+		return 1;
+	}
 	det_iv_fill(iv, fixed_a, 0);
 	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				    sizeof(act_iv),
 				    lc_aes_gcm_iv_deterministic)) {
-		printf("AES GCM det IV: counter regression not rejected\n");
+		printf("AES GCM det IV: window counter reuse not rejected\n");
 		return 1;
 	}
 
@@ -103,8 +113,24 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
-	/* Incremented counter with stable fixed field must succeed */
+	/* A counter far below the window must be rejected as stale */
+	det_iv_fill(iv, fixed_a, 100);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: window advance rejected\n");
+		return 1;
+	}
 	det_iv_fill(iv, fixed_a, 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: stale counter not rejected\n");
+		return 1;
+	}
+
+	/* Incremented counter with stable fixed field must succeed */
+	det_iv_fill(iv, fixed_a, 101);
 	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				   sizeof(act_iv), lc_aes_gcm_iv_deterministic))
 		return 1;

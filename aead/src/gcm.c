@@ -974,14 +974,20 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 		 * the complete IV is provided by the caller where the
 		 * trailing 8 bytes hold the invocation field as a
 		 * little-endian counter. The fixed field is bound to the
-		 * context on first use and the invocation field must be
-		 * strictly increasing to guarantee the IV uniqueness
-		 * requirement of SP 800-38D section 8.3 for a given key.
+		 * context on first use. The context enforces the IV
+		 * uniqueness requirement of SP 800-38D section 8.3 for a
+		 * given key with an anti-reuse window (compare RFC 6479):
+		 * a counter above the highest seen value is always
+		 * accepted, a counter within the trailing 64-value window
+		 * is accepted exactly once, and anything older or already
+		 * used is rejected. The window supports encryption
+		 * pipelines that process messages out of order while never
+		 * permitting an invocation field to repeat.
 		 */
 		struct lc_aes_gcm_cryptor *cryptor = ctx->aead_state;
 		struct lc_gcm_ctx *det_gcm_ctx = &cryptor->gcm_ctx;
 		size_t fixed_len;
-		uint64_t counter;
+		uint64_t counter, diff;
 
 		CKNULL(fixed_field, -EINVAL);
 		CKRET(fixed_field_len != ivlen, -EINVAL);
@@ -989,25 +995,39 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 		fixed_len = ivlen - sizeof(uint64_t);
 		counter = ptr_to_le64(fixed_field + fixed_len);
 
-		if (det_gcm_ctx->det_iv_used) {
-			if (counter <= det_gcm_ctx->det_iv_counter ||
-			    memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
-				   min_size(fixed_len,
-					    sizeof(det_gcm_ctx->det_iv_fixed)))) {
-				/*
-				 * Fail safe: block further encryption with
-				 * the stale IV state.
-				 */
-				det_gcm_ctx->external_iv = 1;
-				return -EINVAL;
-			}
-		} else {
+		if (!det_gcm_ctx->det_iv_used) {
 			memcpy(det_gcm_ctx->det_iv_fixed, fixed_field,
 			       min_size(fixed_len,
 					sizeof(det_gcm_ctx->det_iv_fixed)));
 			det_gcm_ctx->det_iv_used = 1;
+			det_gcm_ctx->det_iv_counter = counter;
+			det_gcm_ctx->det_iv_window = 1;
+		} else if (memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
+				  min_size(fixed_len,
+					   sizeof(det_gcm_ctx->det_iv_fixed)))) {
+			/*
+			 * Fail safe: block further encryption with the
+			 * stale IV state.
+			 */
+			det_gcm_ctx->external_iv = 1;
+			return -EINVAL;
+		} else if (counter > det_gcm_ctx->det_iv_counter) {
+			diff = counter - det_gcm_ctx->det_iv_counter;
+			if (diff >= 64)
+				det_gcm_ctx->det_iv_window = 0;
+			else
+				det_gcm_ctx->det_iv_window <<= diff;
+			det_gcm_ctx->det_iv_window |= 1;
+			det_gcm_ctx->det_iv_counter = counter;
+		} else {
+			diff = det_gcm_ctx->det_iv_counter - counter;
+			if (diff >= 64 ||
+			    (det_gcm_ctx->det_iv_window & (1ULL << diff))) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			det_gcm_ctx->det_iv_window |= 1ULL << diff;
 		}
-		det_gcm_ctx->det_iv_counter = counter;
 
 		if (fixed_field != iv)
 			memcpy(iv, fixed_field, ivlen);
