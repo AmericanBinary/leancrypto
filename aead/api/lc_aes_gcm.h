@@ -52,7 +52,8 @@ struct lc_gcm_ctx {
 	uint8_t rem_aad_inserted : 1; // Was remaining AAD inserted?
 	uint8_t external_iv : 1; // Was an external IV provided?
 
-	uint64_t det_iv_counter; // last deterministic IV invocation field
+	uint64_t det_iv_counter; // highest deterministic IV invocation field
+	uint64_t det_iv_window; // anti-reuse bitmap trailing the highest field
 	uint8_t det_iv_fixed[4]; // fixed field bound to this context
 	uint8_t det_iv_used : 1; // deterministic IV construction in use
 };
@@ -127,7 +128,12 @@ enum lc_aes_gcm_iv_type {
  *   the invocation field interpreted as a little-endian counter. The
  *   context enforces the IV uniqueness requirement of SP 800-38D section
  *   8.3 for a given key: the fixed field is bound to the context on first
- *   use and the invocation field must be strictly increasing. A violation
+ *   use, and the invocation field is tracked with an anti-reuse window
+ *   (compare RFC 6479) - values above the highest seen counter are
+ *   accepted, values within the trailing 64-value window are accepted
+ *   exactly once, and older or repeated values are rejected. This
+ *   supports encryption pipelines that process messages out of order
+ *   while never permitting an invocation field to repeat. A violation
  *   marks the IV state unusable for encryption and returns -EINVAL. The
  *   IV construction must be performed within the same cryptographic
  *   module boundary that encompasses this library.
