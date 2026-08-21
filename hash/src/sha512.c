@@ -116,6 +116,36 @@ int lc_sha384_init(void *_state)
 	return lc_sha384_init_nocheck(_state);
 }
 
+int lc_sha512_256_init_nocheck(void *_state)
+{
+	struct lc_sha512_state *ctx = _state;
+
+	if (!ctx)
+		return -EINVAL;
+
+	/* FIPS 180-4 section 5.3.6.2 */
+	ctx->H[0] = 0x22312194fc2bf72cULL;
+	ctx->H[1] = 0x9f555fa3c84c64c2ULL;
+	ctx->H[2] = 0x2393b86b6f53b151ULL;
+	ctx->H[3] = 0x963877195940eabdULL;
+	ctx->H[4] = 0x96283ee2a88effe3ULL;
+	ctx->H[5] = 0xbe5e1e2553863992ULL;
+	ctx->H[6] = 0x2b0199fc2c85b8aaULL;
+	ctx->H[7] = 0x0eb72ddc81c52ca2ULL;
+
+	ctx->msg_len = 0;
+
+	return 0;
+}
+
+int lc_sha512_256_init(void *_state)
+{
+	sha512_selftest(lc_sha512, "SHA-512/256");
+	LC_SELFTEST_COMPLETED(lc_sha512_c->algorithm_type);
+
+	return lc_sha512_256_init_nocheck(_state);
+}
+
 int lc_sha512_init_nocheck(void *_state)
 {
 	struct lc_sha512_state *ctx = _state;
@@ -357,11 +387,35 @@ void lc_sha384_final(struct lc_sha512_state *ctx, uint8_t *digest,
 		be64_to_ptr(digest, ctx->H[i]);
 }
 
+void lc_sha512_256_final(struct lc_sha512_state *ctx, uint8_t *digest,
+			 void (*sha512_transform_block)(
+				 struct lc_sha512_state *ctx, const uint8_t *in,
+				 size_t blocks))
+{
+	unsigned int i;
+
+	if (!digest)
+		return;
+
+	sha512_final_internal(ctx, sha512_transform_block);
+
+	/* Output digest truncated to the leftmost 256 bits */
+	for (i = 0; i < 4; i++, digest += 8)
+		be64_to_ptr(digest, ctx->H[i]);
+}
+
 static void sha384_final_c(void *_state, uint8_t *digest)
 {
 	struct lc_sha512_state *ctx = _state;
 
 	lc_sha384_final(ctx, digest, sha512_transform_block_c);
+}
+
+static void sha512_256_final_c(void *_state, uint8_t *digest)
+{
+	struct lc_sha512_state *ctx = _state;
+
+	lc_sha512_256_final(ctx, digest, sha512_transform_block_c);
 }
 
 static void sha512_final_c(void *_state, uint8_t *digest)
@@ -388,6 +442,12 @@ size_t lc_sha512_get_digestsize(const void *_state)
 {
 	(void)_state;
 	return LC_SHA512_SIZE_DIGEST;
+}
+
+size_t lc_sha512_256_get_digestsize(const void *_state)
+{
+	(void)_state;
+	return LC_SHA512_256_SIZE_DIGEST;
 }
 
 static const struct lc_hash _sha384_c = {
@@ -426,5 +486,24 @@ static const struct lc_hash _sha512_c = {
 
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_c) = &_sha512_c;
 
+static const struct lc_hash _sha512_256_c = {
+	.init = lc_sha512_256_init,
+	.init_nocheck = lc_sha512_256_init_nocheck,
+	.update = sha512_update_c,
+	.final = sha512_256_final_c,
+	.set_digestsize = NULL,
+	.get_digestsize = lc_sha512_256_get_digestsize,
+	.sponge_permutation = NULL,
+	.sponge_add_bytes = NULL,
+	.sponge_extract_bytes = lc_sha512_extract_bytes,
+	.sponge_newstate = NULL,
+	.sponge_rate = LC_SHA512_256_SIZE_BLOCK,
+	.statesize = sizeof(struct lc_sha512_state),
+	.algorithm_type = LC_ALG_STATUS_SHA512
+};
+
+LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_256_c) = &_sha512_256_c;
+
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha384) = &_sha384_c;
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512) = &_sha512_c;
+LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_256) = &_sha512_256_c;

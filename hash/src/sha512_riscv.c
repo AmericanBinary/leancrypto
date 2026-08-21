@@ -40,6 +40,13 @@ static void sha384_final_riscv(void *_state, uint8_t *digest)
 	lc_sha384_final(ctx, digest, sha512_block_data_order_riscv);
 }
 
+static void sha512_256_final_riscv(void *_state, uint8_t *digest)
+{
+	struct lc_sha512_state *ctx = _state;
+
+	lc_sha512_256_final(ctx, digest, sha512_block_data_order_riscv);
+}
+
 static void sha512_final_riscv(void *_state, uint8_t *digest)
 {
 	struct lc_sha512_state *ctx = _state;
@@ -82,3 +89,21 @@ static const struct lc_hash _sha512_riscv = {
 };
 
 LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_riscv) = &_sha512_riscv;
+
+static const struct lc_hash _sha512_256_riscv = {
+	.init = lc_sha512_256_init,
+	.init_nocheck = lc_sha512_256_init_nocheck,
+	.update = sha512_update_riscv,
+	.final = sha512_256_final_riscv,
+	.set_digestsize = NULL,
+	.get_digestsize = lc_sha512_256_get_digestsize,
+	.sponge_permutation = NULL,
+	.sponge_add_bytes = NULL,
+	.sponge_extract_bytes = lc_sha512_extract_bytes,
+	.sponge_newstate = NULL,
+	.sponge_rate = LC_SHA512_256_SIZE_BLOCK,
+	.statesize = sizeof(struct lc_sha512_state),
+	.algorithm_type = LC_ALG_STATUS_SHA512
+};
+
+LC_INTERFACE_SYMBOL(const struct lc_hash *, lc_sha512_256_riscv) = &_sha512_256_riscv;

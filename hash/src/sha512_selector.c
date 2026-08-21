@@ -36,7 +36,8 @@ LC_CONSTRUCTOR(sha512_fastest_impl, LC_INIT_PRIO_ALGO)
 
 #define LC_FILL_ACCEL_WITH_DEFAULT(accel, dflt)                                \
 	lc_sha384_##accel = lc_sha384_##dflt;                                  \
-	lc_sha512_##accel = lc_sha512_##dflt;
+	lc_sha512_##accel = lc_sha512_##dflt;                                  \
+	lc_sha512_256_##accel = lc_sha512_256_##dflt;
 
 #define LC_FILL_ACCEL_WITH_C(accel) LC_FILL_ACCEL_WITH_DEFAULT(accel, c)
 
@@ -55,7 +56,8 @@ LC_CONSTRUCTOR(sha512_fastest_impl, LC_INIT_PRIO_ALGO)
 
 #define LC_FILL_DFLT_IMPL(accel)                                               \
 	lc_sha384 = lc_sha384_##accel;                                         \
-	lc_sha512 = lc_sha512_##accel;
+	lc_sha512 = lc_sha512_##accel;                                         \
+	lc_sha512_256 = lc_sha512_256_##accel;
 
 	/*
 	 * Set accelerated modes: The fastest implementations are at the top
