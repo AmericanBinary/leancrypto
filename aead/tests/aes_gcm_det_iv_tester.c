@@ -24,7 +24,8 @@
 #include "test_helper_common.h"
 #include "visibility.h"
 
-static void det_iv_fill(uint8_t *iv, const uint8_t *fixed, uint64_t counter)
+static void det_iv_fill(uint8_t iv[12], const uint8_t fixed[4],
+			uint64_t counter)
 {
 	memcpy(iv, fixed, 4);
 	le64_to_ptr(iv + 4, counter);

@@ -56,7 +56,6 @@
 #include "lc_aes_gcm.h"
 #include "lc_memcmp_secure.h"
 #include "lc_rng.h"
-#include "math_helper.h"
 #include "ret_checkers.h"
 #include "timecop.h"
 #include "visibility.h"
@@ -991,20 +990,24 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 
 		CKNULL(fixed_field, -EINVAL);
 		CKRET(fixed_field_len != ivlen, -EINVAL);
+		/*
+		 * The deterministic construction is defined for the 96-bit
+		 * IV size: a 4-byte fixed field and the 8-byte invocation
+		 * field. This bounds all copies below to fixed sizes.
+		 */
+		CKRET(ivlen != 12, -EINVAL);
 
-		fixed_len = ivlen - sizeof(uint64_t);
+		fixed_len = sizeof(det_gcm_ctx->det_iv_fixed);
 		counter = ptr_to_le64(fixed_field + fixed_len);
 
 		if (!det_gcm_ctx->det_iv_used) {
 			memcpy(det_gcm_ctx->det_iv_fixed, fixed_field,
-			       min_size(fixed_len,
-					sizeof(det_gcm_ctx->det_iv_fixed)));
+			       sizeof(det_gcm_ctx->det_iv_fixed));
 			det_gcm_ctx->det_iv_used = 1;
 			det_gcm_ctx->det_iv_counter = counter;
 			det_gcm_ctx->det_iv_window = 1;
 		} else if (memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
-				  min_size(fixed_len,
-					   sizeof(det_gcm_ctx->det_iv_fixed)))) {
+				  sizeof(det_gcm_ctx->det_iv_fixed))) {
 			/*
 			 * Fail safe: block further encryption with the
 			 * stale IV state.
