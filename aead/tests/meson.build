@@ -139,8 +139,15 @@ if get_option('aes_gcm').enabled()
 				include_directories: [ include_internal_dirs ],
 				dependencies: leancrypto
 				)
+	aes_gcm_det_iv_tester = executable('aes_gcm_det_iv_tester',
+				[ 'aes_gcm_det_iv_tester.c', internal_src ],
+				include_directories: [ include_internal_dirs ],
+				dependencies: leancrypto
+				)
 	test('AEAD AES GCM Common', aes_gcm_tester,
 	     suite: regression)
+	test('AEAD AES GCM Deterministic IV', aes_gcm_det_iv_tester,
+	     suite: regression, should_fail: fips140_negative_expect_fail)
 	test('AEAD AES GCM C', aes_gcm_tester,
 	     suite: regression, args: [ 'c' ])
 	test('AEAD AES GCM using S-Box', aes_gcm_tester,

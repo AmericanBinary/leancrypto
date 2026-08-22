@@ -48,6 +48,7 @@
 #include "../../sym/src/aes_internal.h"
 #include "alignment.h"
 #include "bitshift_be.h"
+#include "bitshift_le.h"
 #include "build_bug_on.h"
 #include "compare.h"
 #include "cpufeatures.h"
@@ -952,10 +953,10 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 
 	CKRET(ivlen < 12, -EINVAL);
 
-	CKRET(fixed_field_len >= ivlen, -EINVAL);
-
 	switch (type) {
 	case lc_aes_gcm_iv_generate_new:
+		CKRET(fixed_field_len >= ivlen, -EINVAL);
+
 		if (fixed_field_len && fips140_mode_enabled())
 			return -EINVAL;
 
@@ -966,6 +967,75 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 				      iv + fixed_field_len,
 				      ivlen - fixed_field_len));
 		break;
+	case lc_aes_gcm_iv_deterministic: {
+		/*
+		 * Deterministic construction per SP 800-38D section 8.2.1:
+		 * the complete IV is provided by the caller where the
+		 * trailing 8 bytes hold the invocation field as a
+		 * little-endian counter. The fixed field is bound to the
+		 * context on first use. The context enforces the IV
+		 * uniqueness requirement of SP 800-38D section 8.3 for a
+		 * given key with an anti-reuse window (compare RFC 6479):
+		 * a counter above the highest seen value is always
+		 * accepted, a counter within the trailing 64-value window
+		 * is accepted exactly once, and anything older or already
+		 * used is rejected. The window supports encryption
+		 * pipelines that process messages out of order while never
+		 * permitting an invocation field to repeat.
+		 */
+		struct lc_aes_gcm_cryptor *cryptor = ctx->aead_state;
+		struct lc_gcm_ctx *det_gcm_ctx = &cryptor->gcm_ctx;
+		size_t fixed_len;
+		uint64_t counter, diff;
+
+		CKNULL(fixed_field, -EINVAL);
+		CKRET(fixed_field_len != ivlen, -EINVAL);
+		/*
+		 * The deterministic construction is defined for the 96-bit
+		 * IV size: a 4-byte fixed field and the 8-byte invocation
+		 * field. This bounds all copies below to fixed sizes.
+		 */
+		CKRET(ivlen != 12, -EINVAL);
+
+		fixed_len = sizeof(det_gcm_ctx->det_iv_fixed);
+		counter = ptr_to_le64(fixed_field + fixed_len);
+
+		if (!det_gcm_ctx->det_iv_used) {
+			memcpy(det_gcm_ctx->det_iv_fixed, fixed_field,
+			       sizeof(det_gcm_ctx->det_iv_fixed));
+			det_gcm_ctx->det_iv_used = 1;
+			det_gcm_ctx->det_iv_counter = counter;
+			det_gcm_ctx->det_iv_window = 1;
+		} else if (memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
+				  sizeof(det_gcm_ctx->det_iv_fixed))) {
+			/*
+			 * Fail safe: block further encryption with the
+			 * stale IV state.
+			 */
+			det_gcm_ctx->external_iv = 1;
+			return -EINVAL;
+		} else if (counter > det_gcm_ctx->det_iv_counter) {
+			diff = counter - det_gcm_ctx->det_iv_counter;
+			if (diff >= 64)
+				det_gcm_ctx->det_iv_window = 0;
+			else
+				det_gcm_ctx->det_iv_window <<= diff;
+			det_gcm_ctx->det_iv_window |= 1;
+			det_gcm_ctx->det_iv_counter = counter;
+		} else {
+			diff = det_gcm_ctx->det_iv_counter - counter;
+			if (diff >= 64 ||
+			    (det_gcm_ctx->det_iv_window & (1ULL << diff))) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			det_gcm_ctx->det_iv_window |= 1ULL << diff;
+		}
+
+		if (fixed_field != iv)
+			memcpy(iv, fixed_field, ivlen);
+		break;
+	}
 	default:
 		ret = -EINVAL;
 		goto out;
@@ -974,6 +1044,9 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 	gcm_ctx = ctx->aead_state;
 	CKINT(gcm_setkey(gcm_ctx, ctx->key, ctx->keylen));
 	CKINT(gcm_setiv(gcm_ctx, iv, ivlen));
+
+	/* The IV was constructed internally */
+	gcm_ctx->gcm_ctx.external_iv = 0;
 
 out:
 	return ret;
