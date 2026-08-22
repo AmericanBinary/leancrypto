@@ -17,12 +17,36 @@
  * DAMAGE.
  */
 
-#include <sys/random.h>
+#include <TargetConditionals.h>
 
 #include "ext_headers_internal.h"
 #include "lc_memcpy_secure.h"
 #include "math_helper.h"
 #include "seeded_rng.h"
+
+#if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+
+/*
+ * The iOS SDK does not provide sys/random.h. CommonCrypto's
+ * CCRandomGenerateBytes draws from the same kernel entropy pool and
+ * is the documented interface on that platform.
+ */
+#include <CommonCrypto/CommonRandom.h>
+
+static inline ssize_t __getentropy(uint8_t *buffer, size_t bufferlen)
+{
+	if (bufferlen > INT_MAX)
+		return -EINVAL;
+
+	if (CCRandomGenerateBytes(buffer, bufferlen) != kCCSuccess)
+		return -EFAULT;
+
+	return (ssize_t)bufferlen;
+}
+
+#else /* TARGET_OS_IPHONE */
+
+#include <sys/random.h>
 
 static inline ssize_t __getentropy(uint8_t *buffer, size_t bufferlen)
 {
@@ -44,6 +68,8 @@ static inline ssize_t __getentropy(uint8_t *buffer, size_t bufferlen)
 
 	return totallen;
 }
+
+#endif /* TARGET_OS_IPHONE */
 
 ssize_t get_full_entropy(uint8_t *buffer, size_t bufferlen)
 {
