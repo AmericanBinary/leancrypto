@@ -142,7 +142,7 @@ if get_option('aes_gcm').enabled()
 	aes_gcm_det_iv_tester = executable('aes_gcm_det_iv_tester',
 				[ 'aes_gcm_det_iv_tester.c', internal_src ],
 				include_directories: [ include_internal_dirs ],
-				dependencies: leancrypto_fips
+				dependencies: leancrypto
 				)
 	test('AEAD AES GCM Common', aes_gcm_tester,
 	     suite: regression)
