@@ -23,6 +23,22 @@
 #include "ext_headers_internal.h"
 #include "visibility.h"
 
+#if defined(__FreeBSD__)
+/*
+ * FreeBSD provides the ELF auxiliary vector through elf_aux_info(3)
+ * instead of getauxval(3). The AT_HWCAP bits carry the architectural
+ * arm64 hwcaps on both systems.
+ */
+static unsigned long getauxval(int type)
+{
+	unsigned long val = 0;
+
+	if (elf_aux_info(type, &val, sizeof(val)))
+		return 0;
+	return val;
+}
+#endif
+
 #define HWCAP_ASIMD (1 << 1)
 #define HWCAP_AES (1 << 3)
 #define HWCAP_PMULL (1 << 4)
