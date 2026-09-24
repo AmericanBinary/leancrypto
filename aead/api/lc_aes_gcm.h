@@ -29,6 +29,15 @@ extern "C" {
 #endif
 
 /// \cond DO_NOT_DOCUMENT
+/*
+ * Size of the deterministic-IV anti-reuse window in 64-bit words. The
+ * window tolerates encryption invocations arriving up to
+ * (LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 - 1) counter values behind the
+ * highest value seen, each accepted exactly once. 64 words = 4096
+ * bits, sized for parallel encryption pipelines with deep queues.
+ */
+#define LC_AES_GCM_DET_IV_WINDOW_WORDS 64
+
 struct lc_gcm_ctx {
 	uint64_t len; // cipher data length processed so far
 	uint64_t aad_len; // total add data length
@@ -53,7 +62,11 @@ struct lc_gcm_ctx {
 	uint8_t external_iv : 1; // Was an external IV provided?
 
 	uint64_t det_iv_counter; // highest deterministic IV invocation field
-	uint64_t det_iv_window; // anti-reuse bitmap trailing the highest field
+	// anti-reuse bitmap trailing the highest invocation field: bit d
+	// (word d / 64, bit d % 64) records that counter value
+	// (det_iv_counter - d) was used; sized for encryption pipelines
+	// that seal far out of counter order
+	uint64_t det_iv_window[LC_AES_GCM_DET_IV_WINDOW_WORDS];
 	uint8_t det_iv_fixed[4]; // fixed field bound to this context
 	uint8_t det_iv_used : 1; // deterministic IV construction in use
 };

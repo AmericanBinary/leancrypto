@@ -114,7 +114,11 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
-	/* A counter far below the window must be rejected as stale */
+	/*
+	 * Deep out-of-order tolerance: after a large window advance, a
+	 * counter far behind the highest value but inside the window is
+	 * accepted exactly once.
+	 */
 	det_iv_fill(iv, fixed_a, 100);
 	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				   sizeof(act_iv),
@@ -123,6 +127,34 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 	det_iv_fill(iv, fixed_a, 2);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: in-window counter rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a, 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: in-window counter reuse not rejected\n");
+		return 1;
+	}
+
+	/*
+	 * A counter behind the window must be rejected as stale: advance
+	 * the highest value beyond the full window width, then retry a
+	 * counter that has aged out.
+	 */
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: far window advance rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a, 100);
 	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				    sizeof(act_iv),
 				    lc_aes_gcm_iv_deterministic)) {
@@ -130,8 +162,28 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
+	/* A used counter stays rejected after the bitmap ages */
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2 +
+			    50);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: post-age window advance rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: aged counter reuse not rejected\n");
+		return 1;
+	}
+
 	/* Incremented counter with stable fixed field must succeed */
-	det_iv_fill(iv, fixed_a, 101);
+	det_iv_fill(iv, fixed_a,
+		    101 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
 	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				   sizeof(act_iv), lc_aes_gcm_iv_deterministic))
 		return 1;

@@ -1005,7 +1005,9 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 			       sizeof(det_gcm_ctx->det_iv_fixed));
 			det_gcm_ctx->det_iv_used = 1;
 			det_gcm_ctx->det_iv_counter = counter;
-			det_gcm_ctx->det_iv_window = 1;
+			memset(det_gcm_ctx->det_iv_window, 0,
+			       sizeof(det_gcm_ctx->det_iv_window));
+			det_gcm_ctx->det_iv_window[0] = 1;
 		} else if (memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
 				  sizeof(det_gcm_ctx->det_iv_fixed))) {
 			/*
@@ -1015,21 +1017,53 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 			det_gcm_ctx->external_iv = 1;
 			return -EINVAL;
 		} else if (counter > det_gcm_ctx->det_iv_counter) {
+			/*
+			 * New highest value: age the bitmap by the
+			 * advance distance, then record the new highest
+			 * at bit 0. Bit d of the bitmap (word d / 64,
+			 * bit d % 64) records that the counter value
+			 * (det_iv_counter - d) was used.
+			 */
+			uint64_t *w = det_gcm_ctx->det_iv_window;
+
 			diff = counter - det_gcm_ctx->det_iv_counter;
-			if (diff >= 64)
-				det_gcm_ctx->det_iv_window = 0;
-			else
-				det_gcm_ctx->det_iv_window <<= diff;
-			det_gcm_ctx->det_iv_window |= 1;
+			if (diff >= LC_AES_GCM_DET_IV_WINDOW_WORDS * 64) {
+				memset(w, 0,
+				       sizeof(det_gcm_ctx->det_iv_window));
+			} else {
+				uint64_t words = diff >> 6, bits = diff & 63;
+				int i;
+
+				for (i = LC_AES_GCM_DET_IV_WINDOW_WORDS - 1;
+				     i >= 0; i--) {
+					uint64_t v = 0;
+					int src = i - (int)words;
+
+					if (src >= 0)
+						v = w[src] << bits;
+					if (bits && src >= 1)
+						v |= w[src - 1] >> (64 - bits);
+					w[i] = v;
+				}
+			}
+			w[0] |= 1;
 			det_gcm_ctx->det_iv_counter = counter;
 		} else {
+			uint64_t *w = det_gcm_ctx->det_iv_window;
+			uint64_t word, bit;
+
 			diff = det_gcm_ctx->det_iv_counter - counter;
-			if (diff >= 64 ||
-			    (det_gcm_ctx->det_iv_window & (1ULL << diff))) {
+			if (diff >= LC_AES_GCM_DET_IV_WINDOW_WORDS * 64) {
 				det_gcm_ctx->external_iv = 1;
 				return -EINVAL;
 			}
-			det_gcm_ctx->det_iv_window |= 1ULL << diff;
+			word = diff >> 6;
+			bit = 1ULL << (diff & 63);
+			if (w[word] & bit) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			w[word] |= bit;
 		}
 
 		if (fixed_field != iv)
