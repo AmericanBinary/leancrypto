@@ -1000,6 +1000,23 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 		fixed_len = sizeof(det_gcm_ctx->det_iv_fixed);
 		counter = ptr_to_le64(fixed_field + fixed_len);
 
+		/*
+		 * Map the invocation field onto the context's declared
+		 * subsequence: with stride s and offset o only values
+		 * congruent to o modulo s belong to this context, and the
+		 * window tracks their subsequence index. The default
+		 * stride of 1 tracks the raw invocation field.
+		 */
+		if (det_gcm_ctx->det_iv_stride > 1) {
+			if (counter % det_gcm_ctx->det_iv_stride !=
+			    det_gcm_ctx->det_iv_offset) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			counter = (counter - det_gcm_ctx->det_iv_offset) /
+				  det_gcm_ctx->det_iv_stride;
+		}
+
 		if (!det_gcm_ctx->det_iv_used) {
 			memcpy(det_gcm_ctx->det_iv_fixed, fixed_field,
 			       sizeof(det_gcm_ctx->det_iv_fixed));
@@ -1081,6 +1098,29 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 
 	/* The IV was constructed internally */
 	gcm_ctx->gcm_ctx.external_iv = 0;
+
+out:
+	return ret;
+}
+
+LC_INTERFACE_FUNCTION(int, lc_aes_gcm_det_iv_stride, struct lc_aead_ctx *ctx,
+		      uint64_t stride, uint64_t offset)
+{
+	struct lc_aes_gcm_cryptor *cryptor;
+	struct lc_gcm_ctx *det_gcm_ctx;
+	int ret = 0;
+
+	CKNULL(ctx, -EINVAL);
+	CKRET(!stride || offset >= stride, -EINVAL);
+
+	cryptor = ctx->aead_state;
+	det_gcm_ctx = &cryptor->gcm_ctx;
+
+	/* The stripe must be declared before the first use */
+	CKRET(det_gcm_ctx->det_iv_used, -EBUSY);
+
+	det_gcm_ctx->det_iv_stride = stride;
+	det_gcm_ctx->det_iv_offset = offset;
 
 out:
 	return ret;

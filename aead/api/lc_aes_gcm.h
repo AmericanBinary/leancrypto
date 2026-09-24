@@ -63,7 +63,9 @@ struct lc_gcm_ctx {
 	uint8_t rem_aad_inserted : 1; // Was remaining AAD inserted?
 	uint8_t external_iv : 1; // Was an external IV provided?
 
-	uint64_t det_iv_counter; // highest deterministic IV invocation field
+	uint64_t det_iv_stride; // invocation field stride (0 acts as 1)
+	uint64_t det_iv_offset; // invocation field residue for this context
+	uint64_t det_iv_counter; // highest invocation index (counter/stride)
 	// anti-reuse bitmap trailing the highest invocation field: bit d
 	// (word d / 64, bit d % 64) records that counter value
 	// (det_iv_counter - d) was used; sized for encryption pipelines
@@ -166,6 +168,34 @@ enum lc_aes_gcm_iv_type {
 int lc_aes_gcm_generate_iv(struct lc_aead_ctx *ctx, const uint8_t *fixed_field,
 			   size_t fixed_field_len, uint8_t *iv, size_t ivlen,
 			   enum lc_aes_gcm_iv_type type);
+
+/**
+ * @brief Restrict the deterministic IV construction of this context to
+ * an arithmetic subsequence of invocation field values
+ *
+ * A caller that stripes one key's invocation counters across several
+ * contexts (counter mod stride selects the context) declares the
+ * stripe here: the context accepts only invocation fields congruent to
+ * offset modulo stride and tracks them by their index in the
+ * subsequence, so the anti-reuse window spans
+ * (LC_AES_GCM_DET_IV_WINDOW_WORDS * 64) subsequence steps - stride
+ * times as many counter values - with unchanged memory. Uniqueness
+ * enforcement is unchanged: every accepted invocation field is
+ * accepted exactly once for the lifetime of the context, and values
+ * outside the declared subsequence are rejected.
+ *
+ * Must be invoked after lc_aead_setkey and before the first
+ * deterministic IV construction on the context.
+ *
+ * @param [in] ctx GCM context
+ * @param [in] stride Subsequence stride (>= 1)
+ * @param [in] offset Subsequence residue (< stride)
+ *
+ * @return 0 on success, < 0 on error (-EBUSY once the deterministic
+ * construction was used)
+ */
+int lc_aes_gcm_det_iv_stride(struct lc_aead_ctx *ctx, uint64_t stride,
+			     uint64_t offset);
 
 /**
  * @brief Allocate stack memory for the AES GCM cryptor context
