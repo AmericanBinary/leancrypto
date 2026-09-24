@@ -30,7 +30,11 @@
    REDMASK51 is from amd64-51/consts.s.
 */
 
+#ifdef __APPLE__
+.section __TEXT,__const
+#else
 .section .rodata
+#endif
 .p2align 4
 v0_0: .quad 0, 0
 v1_0: .quad 1, 0

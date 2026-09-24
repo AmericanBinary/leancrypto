@@ -1000,12 +1000,31 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 		fixed_len = sizeof(det_gcm_ctx->det_iv_fixed);
 		counter = ptr_to_le64(fixed_field + fixed_len);
 
+		/*
+		 * Map the invocation field onto the context's declared
+		 * subsequence: with stride s and offset o only values
+		 * congruent to o modulo s belong to this context, and the
+		 * window tracks their subsequence index. The default
+		 * stride of 1 tracks the raw invocation field.
+		 */
+		if (det_gcm_ctx->det_iv_stride > 1) {
+			if (counter % det_gcm_ctx->det_iv_stride !=
+			    det_gcm_ctx->det_iv_offset) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			counter = (counter - det_gcm_ctx->det_iv_offset) /
+				  det_gcm_ctx->det_iv_stride;
+		}
+
 		if (!det_gcm_ctx->det_iv_used) {
 			memcpy(det_gcm_ctx->det_iv_fixed, fixed_field,
 			       sizeof(det_gcm_ctx->det_iv_fixed));
 			det_gcm_ctx->det_iv_used = 1;
 			det_gcm_ctx->det_iv_counter = counter;
-			det_gcm_ctx->det_iv_window = 1;
+			memset(det_gcm_ctx->det_iv_window, 0,
+			       sizeof(det_gcm_ctx->det_iv_window));
+			det_gcm_ctx->det_iv_window[0] = 1;
 		} else if (memcmp(det_gcm_ctx->det_iv_fixed, fixed_field,
 				  sizeof(det_gcm_ctx->det_iv_fixed))) {
 			/*
@@ -1015,21 +1034,53 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 			det_gcm_ctx->external_iv = 1;
 			return -EINVAL;
 		} else if (counter > det_gcm_ctx->det_iv_counter) {
+			/*
+			 * New highest value: age the bitmap by the
+			 * advance distance, then record the new highest
+			 * at bit 0. Bit d of the bitmap (word d / 64,
+			 * bit d % 64) records that the counter value
+			 * (det_iv_counter - d) was used.
+			 */
+			uint64_t *w = det_gcm_ctx->det_iv_window;
+
 			diff = counter - det_gcm_ctx->det_iv_counter;
-			if (diff >= 64)
-				det_gcm_ctx->det_iv_window = 0;
-			else
-				det_gcm_ctx->det_iv_window <<= diff;
-			det_gcm_ctx->det_iv_window |= 1;
+			if (diff >= LC_AES_GCM_DET_IV_WINDOW_WORDS * 64) {
+				memset(w, 0,
+				       sizeof(det_gcm_ctx->det_iv_window));
+			} else {
+				uint64_t words = diff >> 6, bits = diff & 63;
+				int i;
+
+				for (i = LC_AES_GCM_DET_IV_WINDOW_WORDS - 1;
+				     i >= 0; i--) {
+					uint64_t v = 0;
+					int src = i - (int)words;
+
+					if (src >= 0)
+						v = w[src] << bits;
+					if (bits && src >= 1)
+						v |= w[src - 1] >> (64 - bits);
+					w[i] = v;
+				}
+			}
+			w[0] |= 1;
 			det_gcm_ctx->det_iv_counter = counter;
 		} else {
+			uint64_t *w = det_gcm_ctx->det_iv_window;
+			uint64_t word, bit;
+
 			diff = det_gcm_ctx->det_iv_counter - counter;
-			if (diff >= 64 ||
-			    (det_gcm_ctx->det_iv_window & (1ULL << diff))) {
+			if (diff >= LC_AES_GCM_DET_IV_WINDOW_WORDS * 64) {
 				det_gcm_ctx->external_iv = 1;
 				return -EINVAL;
 			}
-			det_gcm_ctx->det_iv_window |= 1ULL << diff;
+			word = diff >> 6;
+			bit = 1ULL << (diff & 63);
+			if (w[word] & bit) {
+				det_gcm_ctx->external_iv = 1;
+				return -EINVAL;
+			}
+			w[word] |= bit;
 		}
 
 		if (fixed_field != iv)
@@ -1047,6 +1098,29 @@ LC_INTERFACE_FUNCTION(int, lc_aes_gcm_generate_iv, struct lc_aead_ctx *ctx,
 
 	/* The IV was constructed internally */
 	gcm_ctx->gcm_ctx.external_iv = 0;
+
+out:
+	return ret;
+}
+
+LC_INTERFACE_FUNCTION(int, lc_aes_gcm_det_iv_stride, struct lc_aead_ctx *ctx,
+		      uint64_t stride, uint64_t offset)
+{
+	struct lc_aes_gcm_cryptor *cryptor;
+	struct lc_gcm_ctx *det_gcm_ctx;
+	int ret = 0;
+
+	CKNULL(ctx, -EINVAL);
+	CKRET(!stride || offset >= stride, -EINVAL);
+
+	cryptor = ctx->aead_state;
+	det_gcm_ctx = &cryptor->gcm_ctx;
+
+	/* The stripe must be declared before the first use */
+	CKRET(det_gcm_ctx->det_iv_used, -EBUSY);
+
+	det_gcm_ctx->det_iv_stride = stride;
+	det_gcm_ctx->det_iv_offset = offset;
 
 out:
 	return ret;

@@ -113,26 +113,26 @@ csubq		11,13
 csubq		12,13
 
 #bitpack
-vpsllw		$12,%ymm6,%ymm4
+vpsllw		$(12),%ymm6,%ymm4
 vpor		%ymm4,%ymm5,%ymm4
 
-vpsrlw		$4,%ymm6,%ymm5
-vpsllw		$8,%ymm7,%ymm6
+vpsrlw		$(4),%ymm6,%ymm5
+vpsllw		$(8),%ymm7,%ymm6
 vpor		%ymm5,%ymm6,%ymm5
 
-vpsrlw		$8,%ymm7,%ymm6
-vpsllw		$4,%ymm8,%ymm7
+vpsrlw		$(8),%ymm7,%ymm6
+vpsllw		$(4),%ymm8,%ymm7
 vpor		%ymm6,%ymm7,%ymm6
 
-vpsllw		$12,%ymm10,%ymm7
+vpsllw		$(12),%ymm10,%ymm7
 vpor		%ymm7,%ymm9,%ymm7
 
-vpsrlw		$4,%ymm10,%ymm8
-vpsllw		$8,%ymm11,%ymm9
+vpsrlw		$(4),%ymm10,%ymm8
+vpsllw		$(8),%ymm11,%ymm9
 vpor		%ymm8,%ymm9,%ymm8
 
-vpsrlw		$8,%ymm11,%ymm9
-vpsllw		$4,%ymm12,%ymm10
+vpsrlw		$(8),%ymm11,%ymm9
+vpsllw		$(4),%ymm12,%ymm10
 vpor		%ymm9,%ymm10,%ymm9
 
 shuffle1	4,5,3,5
@@ -186,32 +186,32 @@ shuffle1	5,8,4,8
 shuffle1	6,9,5,9
 
 #bitunpack
-vpsrlw		$12,%ymm10,%ymm11
-vpsllw		$4,%ymm7,%ymm12
+vpsrlw		$(12),%ymm10,%ymm11
+vpsllw		$(4),%ymm7,%ymm12
 vpor		%ymm11,%ymm12,%ymm11
 vpand		%ymm0,%ymm10,%ymm10
 vpand		%ymm0,%ymm11,%ymm11
 
-vpsrlw		$8,%ymm7,%ymm12
-vpsllw		$8,%ymm4,%ymm13
+vpsrlw		$(8),%ymm7,%ymm12
+vpsllw		$(8),%ymm4,%ymm13
 vpor		%ymm12,%ymm13,%ymm12
 vpand		%ymm0,%ymm12,%ymm12
 
-vpsrlw		$4,%ymm4,%ymm13
+vpsrlw		$(4),%ymm4,%ymm13
 vpand		%ymm0,%ymm13,%ymm13
 
-vpsrlw		$12,%ymm8,%ymm14
-vpsllw		$4,%ymm5,%ymm15
+vpsrlw		$(12),%ymm8,%ymm14
+vpsllw		$(4),%ymm5,%ymm15
 vpor		%ymm14,%ymm15,%ymm14
 vpand		%ymm0,%ymm8,%ymm8
 vpand		%ymm0,%ymm14,%ymm14
 
-vpsrlw		$8,%ymm5,%ymm15
-vpsllw		$8,%ymm9,%ymm1
+vpsrlw		$(8),%ymm5,%ymm15
+vpsllw		$(8),%ymm9,%ymm1
 vpor		%ymm15,%ymm1,%ymm15
 vpand		%ymm0,%ymm15,%ymm15
 
-vpsrlw		$4,%ymm9,%ymm1
+vpsrlw		$(4),%ymm9,%ymm1
 vpand		%ymm0,%ymm1,%ymm1
 
 #store
@@ -228,7 +228,7 @@ vmovdqa		%ymm1,224(%rdi)
 .text
 SYM_FUNC_START(kyber_nttunpack_avx)
 kyber_nttunpack128_avx
-add		$256,%rdi
+add		$(256),%rdi
 kyber_nttunpack128_avx
 RET
 SYM_FUNC_END(kyber_nttunpack_avx)
@@ -237,8 +237,8 @@ SYM_FUNC_START(kyber_ntttobytes_avx)
 #consts
 vmovdqa		_16XQ*2(%rdx),%ymm0
 kyber_ntttobytes128_avx
-add		$256,%rsi
-add		$192,%rdi
+add		$(256),%rsi
+add		$(192),%rdi
 kyber_ntttobytes128_avx
 RET
 SYM_FUNC_END(kyber_ntttobytes_avx)
@@ -247,8 +247,8 @@ SYM_FUNC_START(kyber_nttfrombytes_avx)
 #consts
 vmovdqa		_16XMASK*2(%rdx),%ymm0
 kyber_nttfrombytes128_avx
-add		$256,%rdi
-add		$192,%rsi
+add		$(256),%rdi
+add		$(192),%rsi
 kyber_nttfrombytes128_avx
 RET
 SYM_FUNC_END(kyber_nttfrombytes_avx)

@@ -114,7 +114,11 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
-	/* A counter far below the window must be rejected as stale */
+	/*
+	 * Deep out-of-order tolerance: after a large window advance, a
+	 * counter far behind the highest value but inside the window is
+	 * accepted exactly once.
+	 */
 	det_iv_fill(iv, fixed_a, 100);
 	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				   sizeof(act_iv),
@@ -123,6 +127,34 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 	det_iv_fill(iv, fixed_a, 2);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: in-window counter rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a, 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: in-window counter reuse not rejected\n");
+		return 1;
+	}
+
+	/*
+	 * A counter behind the window must be rejected as stale: advance
+	 * the highest value beyond the full window width, then retry a
+	 * counter that has aged out.
+	 */
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: far window advance rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a, 100);
 	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				    sizeof(act_iv),
 				    lc_aes_gcm_iv_deterministic)) {
@@ -130,8 +162,28 @@ static int lc_aes_gcm_det_iv_test(void)
 		return 1;
 	}
 
+	/* A used counter stays rejected after the bitmap ages */
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2 +
+			    50);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: post-age window advance rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a,
+		    100 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: aged counter reuse not rejected\n");
+		return 1;
+	}
+
 	/* Incremented counter with stable fixed field must succeed */
-	det_iv_fill(iv, fixed_a, 101);
+	det_iv_fill(iv, fixed_a,
+		    101 + (uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 * 2);
 	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
 				   sizeof(act_iv), lc_aes_gcm_iv_deterministic))
 		return 1;
@@ -160,6 +212,83 @@ static int lc_aes_gcm_det_iv_test(void)
 	if (lc_aead_encrypt(aes_gcm, pt, ct, sizeof(pt), aad, sizeof(aad), tag,
 			    sizeof(tag)))
 		return 1;
+	lc_aead_zero(aes_gcm);
+
+	/*
+	 * Strided subsequence: a context declared for counters congruent
+	 * to 4 modulo 16 accepts exactly those, tracks them by
+	 * subsequence index, and rejects the rest.
+	 */
+	if (lc_aead_setkey(aes_gcm, key, sizeof(key), NULL, 0))
+		return 1;
+	if (lc_aes_gcm_det_iv_stride(aes_gcm, 16, 4))
+		return 1;
+	det_iv_fill(iv, fixed_a, 4 + 16 * 3);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided first counter rejected\n");
+		return 1;
+	}
+	/* The stripe is locked once used */
+	if (!lc_aes_gcm_det_iv_stride(aes_gcm, 8, 0)) {
+		printf("AES GCM det IV: stride change after use accepted\n");
+		return 1;
+	}
+	/* Wrong residue is rejected */
+	det_iv_fill(iv, fixed_a, 5);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: wrong stride residue accepted\n");
+		return 1;
+	}
+	/* An earlier in-window subsequence member is accepted once */
+	det_iv_fill(iv, fixed_a, 4 + 16);
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided in-window counter rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a, 4 + 16);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided counter reuse not rejected\n");
+		return 1;
+	}
+	/*
+	 * The window spans stride * window-bits counter values: a
+	 * subsequence member one full raw window behind the highest is
+	 * still inside the strided window.
+	 */
+	det_iv_fill(iv, fixed_a,
+		    4 + 16 * ((uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 *
+			      2));
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided window advance rejected\n");
+		return 1;
+	}
+	det_iv_fill(iv, fixed_a,
+		    4 + 16 * ((uint64_t)LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 +
+			      7));
+	if (lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				   sizeof(act_iv),
+				   lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided deep window counter rejected\n");
+		return 1;
+	}
+	/* A subsequence member behind the strided window is stale */
+	det_iv_fill(iv, fixed_a, 4 + 16 * 2);
+	if (!lc_aes_gcm_generate_iv(aes_gcm, iv, sizeof(iv), act_iv,
+				    sizeof(act_iv),
+				    lc_aes_gcm_iv_deterministic)) {
+		printf("AES GCM det IV: strided stale counter not rejected\n");
+		return 1;
+	}
 	lc_aead_zero(aes_gcm);
 
 	return ret;

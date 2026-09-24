@@ -47,6 +47,7 @@
 # void KeccakP1600_AVX2_Initialize(void *state);
 #
 SYM_FUNC_START(KeccakP1600_AVX2_Initialize)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_Initialize)
 .balign 32
     vpxor       %ymm0,%ymm0,%ymm0
     vmovdqu     %ymm0,0*32(%rdi)
@@ -65,6 +66,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_Initialize)
 #                                %rdi                 %rsi               %rdx
 #
 SYM_FUNC_START(KeccakP1600_AVX2_AddByte)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_AddByte)
 .balign 32
     mov         %rdx, %rax
     and         $7, %rax
@@ -83,6 +85,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_AddByte)
 #                                %rdi                         %rsi               %rdx                 %rcx
 #
 SYM_FUNC_START(KeccakP1600_AVX2_AddBytes)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_AddBytes)
 .balign 32
     cmp         $0, %rcx
     jz          KeccakP1600_AVX2_AddBytes_Exit
@@ -140,6 +143,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_AddBytes)
 #                                       %rdi                        %rsi               %rdx                 %rcx
 #
 SYM_FUNC_START(KeccakP1600_AVX2_OverwriteBytes)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_OverwriteBytes)
 .balign 32
     cmp         $0, %rcx
     jz          KeccakP1600_AVX2_OverwriteBytes_Exit
@@ -197,6 +201,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_OverwriteBytes)
 #                                            %rdi                %rsi
 #
 SYM_FUNC_START(KeccakP1600_AVX2_OverwriteWithZeroes)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_OverwriteWithZeroes)
 .balign 32
     cmp         $0, %rsi
     jz          KeccakP1600_AVX2_OverwriteWithZeroes_Exit
@@ -230,6 +235,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_OverwriteWithZeroes)
 #                                           %rdi                  %rsi               %rdx                 %rcx
 #
 SYM_FUNC_START(KeccakP1600_AVX2_ExtractBytes)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_ExtractBytes)
 .balign 32
     push        %rbx
     cmp         $0, %rcx
@@ -290,6 +296,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_ExtractBytes)
 #                                                 %rdi                        %rsi                  %rdx                 %rcx                  %r8
 #
 SYM_FUNC_START(KeccakP1600_AVX2_ExtractAndAddBytes)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_ExtractAndAddBytes)
 .balign 32
     push        %rbx
     push        %r10
@@ -357,6 +364,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_ExtractAndAddBytes)
 # internal    
 #
 SYM_FUNC_START(__KeccakF1600_AVX2)
+SYM_FUNC_ENTER(__KeccakF1600_AVX2)
 .balign 32
 .Loop_avx2:
     ######################################### Theta
@@ -503,6 +511,7 @@ SYM_FUNC_END(__KeccakF1600_AVX2)
 #                                        %rdi
 #
 SYM_FUNC_START(KeccakP1600_AVX2_Permute_24rounds)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_Permute_24rounds)
 .balign 32
     FRAME_BEGIN
     lea             rhotates_left+96(%rip),%r8
@@ -518,7 +527,7 @@ SYM_FUNC_START(KeccakP1600_AVX2_Permute_24rounds)
     vmovdqu         8+32*3-96(%rdi),%ymm4
     vmovdqu         8+32*4-96(%rdi),%ymm5
     vmovdqu         8+32*5-96(%rdi),%ymm6
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     vmovq           %xmm0,-96(%rdi)
     vmovdqu         %ymm1,8+32*0-96(%rdi)
     vmovdqu         %ymm2,8+32*1-96(%rdi)
@@ -537,6 +546,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_Permute_24rounds)
 #                                        %rdi
 #
 SYM_FUNC_START(KeccakP1600_AVX2_Permute_12rounds)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_Permute_12rounds)
 .balign 32
     FRAME_BEGIN
     lea             rhotates_left+96(%rip),%r8
@@ -552,7 +562,7 @@ SYM_FUNC_START(KeccakP1600_AVX2_Permute_12rounds)
     vmovdqu         8+32*3-96(%rdi),%ymm4
     vmovdqu         8+32*4-96(%rdi),%ymm5
     vmovdqu         8+32*5-96(%rdi),%ymm6
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     vmovq           %xmm0,-96(%rdi)
     vmovdqu         %ymm1,8+32*0-96(%rdi)
     vmovdqu         %ymm2,8+32*1-96(%rdi)
@@ -571,6 +581,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_Permute_12rounds)
 #                                        %rdi                %rsi
 #
 SYM_FUNC_START(KeccakP1600_AVX2_Permute_Nrounds)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_Permute_Nrounds)
 .balign 32
     FRAME_BEGIN
     lea             rhotates_left+96(%rip),%r8
@@ -588,7 +599,7 @@ SYM_FUNC_START(KeccakP1600_AVX2_Permute_Nrounds)
     vmovdqu         8+32*3-96(%rdi),%ymm4
     vmovdqu         8+32*4-96(%rdi),%ymm5
     vmovdqu         8+32*5-96(%rdi),%ymm6
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     vmovq           %xmm0,-96(%rdi)
     vmovdqu         %ymm1,8+32*0-96(%rdi)
     vmovdqu         %ymm2,8+32*1-96(%rdi)
@@ -607,6 +618,7 @@ SYM_FUNC_END(KeccakP1600_AVX2_Permute_Nrounds)
 #                                          %rdi                %rsi                            %rdx         %rcx
 #
 SYM_FUNC_START(KeccakF1600_AVX2_FastLoop_Absorb)
+SYM_FUNC_ENTER(KeccakF1600_AVX2_FastLoop_Absorb)
 .balign 32
     FRAME_BEGIN
     push            %rbx
@@ -667,7 +679,7 @@ KeccakF1600_AVX2_FastLoop_Absorb_Loop21Lanes:
     add             $21*8, %rdx
     lea             iotas(%rip),%r10
     mov             $24,%eax
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     sub             $21, %rcx
     jnc             KeccakF1600_AVX2_FastLoop_Absorb_Loop21Lanes
 KeccakF1600_AVX2_FastLoop_Absorb_SaveAndExit:
@@ -739,7 +751,7 @@ KeccakF1600_AVX2_FastLoop_Absorb_Loop17Lanes:
     add             $17*8, %rdx
     lea             iotas(%rip),%r10
     mov             $24,%eax
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     sub             $17, %rcx
     jnc             KeccakF1600_AVX2_FastLoop_Absorb_Loop17Lanes
     jmp             KeccakF1600_AVX2_FastLoop_Absorb_SaveAndExit
@@ -763,7 +775,11 @@ KeccakF1600_AVX2_FastLoop_Absorb_LanesAddLoop:
 .ifdef no_plt
     call            KeccakP1600_AVX2_Permute_24rounds
 .else
+#ifdef __APPLE__
+    call            _KeccakP1600_AVX2_Permute_24rounds
+#else
     call            KeccakP1600_AVX2_Permute_24rounds@PLT
+#endif
 .endif
     pop             %rcx
     pop             %rdx
@@ -780,6 +796,7 @@ SYM_FUNC_END(KeccakF1600_AVX2_FastLoop_Absorb)
 #                                          %rdi                %rsi                            %rdx         %rcx
 #
 SYM_FUNC_START(KeccakP1600_AVX2_12rounds_FastLoop_Absorb)
+SYM_FUNC_ENTER(KeccakP1600_AVX2_12rounds_FastLoop_Absorb)
 .balign 32
     FRAME_BEGIN
     push            %rbx
@@ -840,7 +857,7 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Loop21Lanes:
     add             $21*8, %rdx
     lea             iotas+12*4*8(%rip),%r10
     mov             $12,%eax
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     sub             $21, %rcx
     jnc             KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Loop21Lanes
 KeccakP1600_AVX2_12rounds_FastLoop_Absorb_SaveAndExit:
@@ -912,7 +929,7 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Loop17Lanes:
     add             $17*8, %rdx
     lea             iotas+12*4*8(%rip),%r10
     mov             $12,%eax
-    call            __KeccakF1600_AVX2
+    call            SYM_FUNC(__KeccakF1600_AVX2)
     sub             $17, %rcx
     jnc             KeccakP1600_AVX2_12rounds_FastLoop_Absorb_Loop17Lanes
     jmp             KeccakP1600_AVX2_12rounds_FastLoop_Absorb_SaveAndExit
@@ -936,7 +953,11 @@ KeccakP1600_AVX2_12rounds_FastLoop_Absorb_LanesAddLoop:
 .ifdef no_plt
     call            KeccakP1600_AVX2_Permute_12rounds
 .else
+#ifdef __APPLE__
+    call            _KeccakP1600_AVX2_Permute_12rounds
+#else
     call            KeccakP1600_AVX2_Permute_12rounds@PLT
+#endif
 .endif
     pop             %rcx
     pop             %rdx
