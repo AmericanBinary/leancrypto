@@ -785,10 +785,10 @@ KeccakF1600_AVX512_FastLoop_Absorb_LanesAddLoop:
 .ifdef no_plt
     call            KeccakP1600_AVX512_Permute_24rounds
 .else
-#ifdef __APPLE__
-    call            _KeccakP1600_AVX512_Permute_24rounds
-#else
+#ifdef __ELF__
     call            KeccakP1600_AVX512_Permute_24rounds@PLT
+#else
+    call            SYM_FUNC(KeccakP1600_AVX512_Permute_24rounds)
 #endif
 .endif
     pop             %rcx
@@ -923,10 +923,10 @@ KeccakP1600_AVX512_FastLoop_Absorb_LanesAddLoop:
 .ifdef no_plt
     call            KeccakP1600_AVX512_Permute_12rounds
 .else
-#ifdef __APPLE__
-    call            _KeccakP1600_AVX512_Permute_12rounds
-#else
+#ifdef __ELF__
     call            KeccakP1600_AVX512_Permute_12rounds@PLT
+#else
+    call            SYM_FUNC(KeccakP1600_AVX512_Permute_12rounds)
 #endif
 .endif
     pop             %rcx
