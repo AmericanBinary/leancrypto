@@ -233,13 +233,15 @@
 
 #  define SYM_FUNC(name)	name
 
-#  define SYM_TYPE_OBJ(name)						       \
-	.type SYM_FUNC(name),%object
+/*
+ * .type and .size are ELF directives without COFF semantics: GNU
+ * binutils tolerates them, the LLVM COFF assembler rejects them.
+ */
+#  define SYM_TYPE_OBJ(name)
 
 #  define SYM_TYPE_FUNC(name)
 
-#  define SYM_SIZE(name)						       \
-	.size SYM_FUNC(name),.-SYM_FUNC(name)
+#  define SYM_SIZE(name)
 
 #  define SYM_FUNC_START(name)						       \
 	.global SYM_FUNC(name) ;					       \
