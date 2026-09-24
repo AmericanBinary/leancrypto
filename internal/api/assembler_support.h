@@ -192,7 +192,23 @@
 #  define SYM_TYPE_FUNC(name)
 #  define SYM_SIZE(name)
 
-/* The Apple assembler does not support command separation with ";" */
+#  ifdef __x86_64__
+
+/*
+ * The Mach-O x86_64 assembler accepts ";" statement separation, so the
+ * function label is emitted by SYM_FUNC_START exactly as on ELF; the
+ * x86_64 assembler files use SYM_FUNC_START without SYM_FUNC_ENTER.
+ */
+#  define SYM_FUNC_START(name)						       \
+	.global SYM_FUNC(name) ;					       \
+	SYM_FUNC(name):							       \
+	LC_ASM_ENTER_HARDENING
+
+#  define SYM_FUNC_ENTER(name)
+
+#  else /* __x86_64__ */
+
+/* The Apple arm64 assembler does not support command separation with ";" */
 #  define SYM_FUNC_START(name)						       \
 	.global SYM_FUNC(name)
 
@@ -200,11 +216,18 @@
 	SYM_FUNC(name):							       \
 	LC_ASM_ENTER_HARDENING ;
 
+#  endif /* __x86_64__ */
+
 #  define SYM_FUNC_END(name)						       \
 	SYM_TYPE_FUNC(name) ;						       \
 	SYM_SIZE(name)
 
-# define LC_FIPS_RODATA_SECTION .section .rodata
+#  define FRAME_BEGIN
+
+#  define FRAME_END
+
+/* Mach-O has no .rodata; __TEXT,__const is the read-only data section */
+# define LC_FIPS_RODATA_SECTION .section __TEXT,__const
 
 # elif (defined(__CYGWIN__) || defined(_WIN32))
 
@@ -289,6 +312,8 @@
 #define LC_FIPS_RODATA_SECTION_ASM .section .rodata
 #elif defined __ELF__
 #define LC_FIPS_RODATA_SECTION_ASM .section .fips_rodata
+#elif defined __APPLE__
+#define LC_FIPS_RODATA_SECTION_ASM .section __TEXT,__const
 #else
 #define LC_FIPS_RODATA_SECTION_ASM .section .rodata
 #endif

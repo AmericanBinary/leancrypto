@@ -29,6 +29,17 @@
 
 #include "assembler_support.h"
 
+/*
+ * LLVM's Mach-O assembler cannot encode this file's DWARF CFI advance
+ * expressions; the directives carry unwind metadata only, so they are
+ * compiled out on Apple platforms.
+ */
+#ifdef __APPLE__
+#define LC_CFI(...)
+#else
+#define LC_CFI(...) __VA_ARGS__
+#endif
+
 .text
 
 #if 0
@@ -37,15 +48,15 @@
 
 SYM_FUNC_START(sha256_block_data_order)
 SYM_FUNC_ENTER(sha256_block_data_order)
-.align	16
-.cfi_startproc
+.p2align	4
+LC_CFI(.cfi_startproc)
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-16)
 	movq	%rsp,%rbp
-.cfi_def_cfa_register	%rbp
+LC_CFI(.cfi_def_cfa_register	%rbp)
 	leaq	lc_x86_64_cpuid(%rip),%rax
 	movl	0(%rax),%r9d
 	movl	4(%rax),%r10d
@@ -63,19 +74,19 @@ SYM_FUNC_ENTER(sha256_block_data_order)
 	testl	$512,%r10d
 	jnz	.Lssse3_shortcut
 	pushq	%rbx
-.cfi_offset	%rbx,-24
+LC_CFI(.cfi_offset	%rbx,-24)
 	pushq	%r12
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_offset	%r14,-48)
 	pushq	%r15
-.cfi_offset	%r15,-56
+LC_CFI(.cfi_offset	%r15,-56)
 	shlq	$4,%rdx
 	subq	$64+24,%rsp
 
-.cfi_def_cfa	%rsp,144
+LC_CFI(.cfi_def_cfa	%rsp,144)
 
 	leaq	(%rsi,%rdx,4),%rdx
 	movq	%rdi,64+0(%rsp)
@@ -92,7 +103,7 @@ SYM_FUNC_ENTER(sha256_block_data_order)
 	movl	28(%rdi),%r11d
 	jmp	.Lloop
 
-.align	16
+.p2align	4
 .Lloop:
 	movl	%ebx,%edi
 	leaq	K256(%rip),%rbp
@@ -753,7 +764,7 @@ SYM_FUNC_ENTER(sha256_block_data_order)
 
 	leaq	20(%rbp),%rbp
 	jmp	.Lrounds_16_xx
-.align	16
+.p2align	4
 .Lrounds_16_xx:
 	movl	4(%rsp),%r13d
 	movl	56(%rsp),%r15d
@@ -1744,22 +1755,22 @@ SYM_FUNC_ENTER(sha256_block_data_order)
 	jb	.Lloop
 
 	leaq	64+24+48(%rsp),%r11
-.cfi_def_cfa	%r11,8
+LC_CFI(.cfi_def_cfa	%r11,8)
 	movq	64+24(%rsp),%r15
 	movq	-40(%r11),%r14
 	movq	-32(%r11),%r13
 	movq	-24(%r11),%r12
 	movq	-16(%r11),%rbx
 	movq	-8(%r11),%rbp
-.cfi_restore	%r12
-.cfi_restore	%r13
-.cfi_restore	%r14
-.cfi_restore	%r15
-.cfi_restore	%rbp
-.cfi_restore	%rbx
+LC_CFI(.cfi_restore	%r12)
+LC_CFI(.cfi_restore	%r13)
+LC_CFI(.cfi_restore	%r14)
+LC_CFI(.cfi_restore	%r15)
+LC_CFI(.cfi_restore	%rbp)
+LC_CFI(.cfi_restore	%rbx)
 	leaq	(%r11),%rsp
 	.byte	0xf3,0xc3
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(sha256_block_data_order)
 
 .byte	83,72,65,50,53,54,32,98,108,111,99,107,32,116,114,97,110,115,102,111,114,109,32,102,111,114,32,120,56,54,95,54,52,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,64,100,111,116,45,97,115,109,0
@@ -1767,15 +1778,15 @@ SYM_FUNC_END(sha256_block_data_order)
 
 SYM_FUNC_START(sha256_block_data_order_shaext)
 SYM_FUNC_ENTER(sha256_block_data_order_shaext)
-.align	64
-.cfi_startproc
+.p2align	6
+LC_CFI(.cfi_startproc)
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-16)
 	movq	%rsp,%rbp
-.cfi_def_cfa_register	%rbp
+LC_CFI(.cfi_def_cfa_register	%rbp)
 .Lshaext_shortcut:
 
 	leaq	K256+128(%rip),%rcx
@@ -1791,7 +1802,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_shaext)
 	punpcklqdq	%xmm0,%xmm2
 	jmp	.Loop_shaext
 
-.align	16
+.p2align	4
 .Loop_shaext:
 	movdqu	(%rsi),%xmm3
 	movdqu	16(%rsi),%xmm4
@@ -1979,39 +1990,39 @@ SYM_FUNC_ENTER(sha256_block_data_order_shaext)
 
 	movdqu	%xmm1,(%rdi)
 	movdqu	%xmm2,16(%rdi)
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 	popq	%rbp
-.cfi_adjust_cfa_offset	-8
-.cfi_restore	%rbp
+LC_CFI(.cfi_adjust_cfa_offset	-8)
+LC_CFI(.cfi_restore	%rbp)
 
 	//.byte	0xf3,0xc3
 	RET
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(sha256_block_data_order_shaext)
 
 #if 0
 SYM_FUNC_START(sha256_block_data_order_ssse3)
 SYM_FUNC_ENTER(sha256_block_data_order_ssse3)
-.align	64
-.cfi_startproc
+.p2align	6
+LC_CFI(.cfi_startproc)
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-16)
 	movq	%rsp,%rbp
-.cfi_def_cfa_register	%rbp
+LC_CFI(.cfi_def_cfa_register	%rbp)
 .Lssse3_shortcut:
 	pushq	%rbx
-.cfi_offset	%rbx,-24
+LC_CFI(.cfi_offset	%rbx,-24)
 	pushq	%r12
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_offset	%r14,-48)
 	pushq	%r15
-.cfi_offset	%r15,-56
+LC_CFI(.cfi_offset	%r15,-56)
 	shlq	$4,%rdx
 	subq	$24,%rsp
 
@@ -2034,7 +2045,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_ssse3)
 
 
 	jmp	.Lloop_ssse3
-.align	16
+.p2align	4
 .Lloop_ssse3:
 	movdqa	K256+512(%rip),%xmm7
 	movq	%rsi,-56(%rbp)
@@ -2065,7 +2076,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_ssse3)
 	movl	%r8d,%r13d
 	jmp	.Lssse3_00_47
 
-.align	16
+.p2align	4
 .Lssse3_00_47:
 	subq	$-128,%rsi
 	rorl	$14,%r13d
@@ -3094,44 +3105,44 @@ SYM_FUNC_ENTER(sha256_block_data_order_ssse3)
 	movq	-16(%rbp),%r12
 	movq	-8(%rbp),%rbx
 	movq	%rbp,%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 	popq	%rbp
-.cfi_adjust_cfa_offset	-8
-.cfi_restore	%rbp
-.cfi_restore	%r12
-.cfi_restore	%r13
-.cfi_restore	%r14
-.cfi_restore	%r15
-.cfi_restore	%rbx
+LC_CFI(.cfi_adjust_cfa_offset	-8)
+LC_CFI(.cfi_restore	%rbp)
+LC_CFI(.cfi_restore	%r12)
+LC_CFI(.cfi_restore	%r13)
+LC_CFI(.cfi_restore	%r14)
+LC_CFI(.cfi_restore	%r15)
+LC_CFI(.cfi_restore	%rbx)
 	.byte	0xf3,0xc3
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(sha256_block_data_order_ssse3)
 #endif
 
 #if 0
 SYM_FUNC_START(sha256_block_data_order_avx)
 SYM_FUNC_ENTER(sha256_block_data_order_avx)
-.align	64
-.cfi_startproc
+.p2align	6
+LC_CFI(.cfi_startproc)
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-16)
 	movq	%rsp,%rbp
-.cfi_def_cfa_register	%rbp
+LC_CFI(.cfi_def_cfa_register	%rbp)
 .Lavx_shortcut:
 	pushq	%rbx
-.cfi_offset	%rbx,-24
+LC_CFI(.cfi_offset	%rbx,-24)
 	pushq	%r12
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_offset	%r14,-48)
 	pushq	%r15
-.cfi_offset	%r15,-56
+LC_CFI(.cfi_offset	%r15,-56)
 	shlq	$4,%rdx
 	subq	$24,%rsp
 
@@ -3155,7 +3166,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx)
 	vmovdqa	K256+512+32(%rip),%xmm8
 	vmovdqa	K256+512+64(%rip),%xmm9
 	jmp	.Lloop_avx
-.align	16
+.p2align	4
 .Lloop_avx:
 	vmovdqa	K256+512(%rip),%xmm7
 	movq	%rsi,-56(%rbp)
@@ -3182,7 +3193,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx)
 	movl	%r8d,%r13d
 	jmp	.Lavx_00_47
 
-.align	16
+.p2align	4
 .Lavx_00_47:
 	subq	$-128,%rsi
 	vpalignr	$4,%xmm0,%xmm1,%xmm4
@@ -4176,42 +4187,42 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx)
 	movq	-16(%rbp),%r12
 	movq	-8(%rbp),%rbx
 	movq	%rbp,%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 	popq	%rbp
-.cfi_adjust_cfa_offset	-8
-.cfi_restore	%rbp
-.cfi_restore	%r12
-.cfi_restore	%r13
-.cfi_restore	%r14
-.cfi_restore	%r15
-.cfi_restore	%rbx
+LC_CFI(.cfi_adjust_cfa_offset	-8)
+LC_CFI(.cfi_restore	%rbp)
+LC_CFI(.cfi_restore	%r12)
+LC_CFI(.cfi_restore	%r13)
+LC_CFI(.cfi_restore	%r14)
+LC_CFI(.cfi_restore	%r15)
+LC_CFI(.cfi_restore	%rbx)
 	.byte	0xf3,0xc3
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(sha256_block_data_order_avx)
 #endif
 
 SYM_FUNC_START(sha256_block_data_order_avx2)
 SYM_FUNC_ENTER(sha256_block_data_order_avx2)
-.align	64
-.cfi_startproc
+.p2align	6
+LC_CFI(.cfi_startproc)
 	.byte	0xf3,0x0f,0x1e,0xfa
 
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-16)
 	movq	%rsp,%rbp
-.cfi_def_cfa_register	%rbp
+LC_CFI(.cfi_def_cfa_register	%rbp)
 .Lavx2_shortcut:
 	pushq	%rbx
-.cfi_offset	%rbx,-24
+LC_CFI(.cfi_offset	%rbx,-24)
 	pushq	%r12
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_offset	%r14,-48)
 	pushq	%r15
-.cfi_offset	%r15,-56
+LC_CFI(.cfi_offset	%r15,-56)
 	shlq	$4,%rdx
 	subq	$24,%rsp
 
@@ -4239,7 +4250,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx2)
 	vmovdqa	K256+512+32(%rip),%ymm8
 	vmovdqa	K256+512+64(%rip),%ymm9
 	jmp	.Loop_avx2
-.align	16
+.p2align	4
 .Loop_avx2:
 	vmovdqa	K256+512(%rip),%ymm7
 	movq	%rsi,-56(%rbp)
@@ -4273,7 +4284,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx2)
 	subq	$-32*4,%rsi
 	jmp	.Lavx2_00_47
 
-.align	16
+.p2align	4
 .Lavx2_00_47:
 	leaq	-64(%rsp),%rsp
 	vpalignr	$4,%ymm0,%ymm1,%ymm4
@@ -5203,7 +5214,7 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx2)
 	xorl	%ecx,%edi
 	movl	%r9d,%r12d
 	jmp	.Lower_avx2
-.align	16
+.p2align	4
 .Lower_avx2:
 	addl	0+16(%rsi),%r11d
 	andl	%r8d,%r12d
@@ -5438,22 +5449,22 @@ SYM_FUNC_ENTER(sha256_block_data_order_avx2)
 	movq	-16(%rbp),%r12
 	movq	-8(%rbp),%rbx
 	movq	%rbp,%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 	popq	%rbp
-.cfi_adjust_cfa_offset	-8
-.cfi_restore	%rbp
-.cfi_restore	%r12
-.cfi_restore	%r13
-.cfi_restore	%r14
-.cfi_restore	%r15
-.cfi_restore	%rbx
+LC_CFI(.cfi_adjust_cfa_offset	-8)
+LC_CFI(.cfi_restore	%rbp)
+LC_CFI(.cfi_restore	%r12)
+LC_CFI(.cfi_restore	%r13)
+LC_CFI(.cfi_restore	%r14)
+LC_CFI(.cfi_restore	%r15)
+LC_CFI(.cfi_restore	%rbx)
 	//.byte	0xf3,0xc3
 	RET
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(sha256_block_data_order_avx2)
 
 LC_FIPS_RODATA_SECTION
-.align	64
+.p2align	6
 K256:
 .long	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5
 .long	0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5

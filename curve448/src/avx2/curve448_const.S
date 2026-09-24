@@ -56,7 +56,11 @@
 +-----------------------------------------------------------------------------+
 */
 
+#ifdef __APPLE__
+.section __TEXT,__const
+#else
 .section .rodata
+#endif
 .p2align 5
 
 hh1_p1 		: .long 0x0,0x0,0x1FFFFFFF,0x1FFFFFFD,0x1FFFFFFF,0x1FFFFFFD,0x0,0x0

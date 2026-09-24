@@ -27,14 +27,24 @@
 
 #include "assembler_support.h"
 
-.extern lc_x86_64_cpuid
+/*
+ * LLVM's Mach-O assembler cannot encode this file's DWARF CFI advance
+ * expressions; the directives carry unwind metadata only, so they are
+ * compiled out on Apple platforms.
+ */
+#ifdef __APPLE__
+#define LC_CFI(...)
+#else
+#define LC_CFI(...) __VA_ARGS__
+#endif
 
+.extern SYM_FUNC(lc_x86_64_cpuid)
 .text
 
 SYM_FUNC_START(aesni_encrypt)
 SYM_FUNC_ENTER(aesni_encrypt)
-.align	16
-.cfi_startproc
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	movups	(%rdi),%xmm2
 	movl	240(%rdx),%eax
@@ -55,13 +65,13 @@ SYM_FUNC_ENTER(aesni_encrypt)
 	pxor	%xmm2,%xmm2
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_encrypt)
 
 SYM_FUNC_START(aesni_decrypt)
 SYM_FUNC_ENTER(aesni_decrypt)
-.align	16
-.cfi_startproc
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	movups	(%rdi),%xmm2
 	movl	240(%rdx),%eax
@@ -82,11 +92,12 @@ SYM_FUNC_ENTER(aesni_decrypt)
 	pxor	%xmm2,%xmm2
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_decrypt)
 
 SYM_FUNC_START(_aesni_encrypt2)
-.align	16
+SYM_FUNC_ENTER(_aesni_encrypt2)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -124,7 +135,8 @@ SYM_FUNC_START(_aesni_encrypt2)
 SYM_FUNC_END(_aesni_encrypt2)
 
 SYM_FUNC_START(_aesni_decrypt2)
-.align	16
+SYM_FUNC_ENTER(_aesni_decrypt2)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -156,7 +168,8 @@ SYM_FUNC_START(_aesni_decrypt2)
 SYM_FUNC_END(_aesni_decrypt2)
 
 SYM_FUNC_START(_aesni_encrypt3)
-.align	16
+SYM_FUNC_ENTER(_aesni_encrypt3)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -193,7 +206,8 @@ SYM_FUNC_START(_aesni_encrypt3)
 SYM_FUNC_END(_aesni_encrypt3)
 
 SYM_FUNC_START(_aesni_decrypt3)
-.align	16
+SYM_FUNC_ENTER(_aesni_decrypt3)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -230,7 +244,8 @@ SYM_FUNC_START(_aesni_decrypt3)
 SYM_FUNC_END(_aesni_decrypt3)
 
 SYM_FUNC_START(_aesni_encrypt4)
-.align	16
+SYM_FUNC_ENTER(_aesni_encrypt4)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -273,7 +288,8 @@ SYM_FUNC_START(_aesni_encrypt4)
 SYM_FUNC_END(_aesni_encrypt4)
 
 SYM_FUNC_START(_aesni_decrypt4)
-.align	16
+SYM_FUNC_ENTER(_aesni_decrypt4)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -316,7 +332,8 @@ SYM_FUNC_START(_aesni_decrypt4)
 SYM_FUNC_END(_aesni_decrypt4)
 
 SYM_FUNC_START(_aesni_encrypt6)
-.align	16
+SYM_FUNC_ENTER(_aesni_encrypt6)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -334,7 +351,7 @@ SYM_FUNC_START(_aesni_encrypt6)
 	movups	(%rcx,%rax,1),%xmm0
 	addq	$16,%rax
 	jmp	.Lenc_loop6_enter
-.align	16
+.p2align	4
 .Lenc_loop6:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -373,7 +390,8 @@ SYM_FUNC_START(_aesni_encrypt6)
 SYM_FUNC_END(_aesni_encrypt6)
 
 SYM_FUNC_START(_aesni_decrypt6)
-.align	16
+SYM_FUNC_ENTER(_aesni_decrypt6)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -391,7 +409,7 @@ SYM_FUNC_START(_aesni_decrypt6)
 	movups	(%rcx,%rax,1),%xmm0
 	addq	$16,%rax
 	jmp	.Ldec_loop6_enter
-.align	16
+.p2align	4
 .Ldec_loop6:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -430,7 +448,8 @@ SYM_FUNC_START(_aesni_decrypt6)
 SYM_FUNC_END(_aesni_decrypt6)
 
 SYM_FUNC_START(_aesni_encrypt8)
-.align	16
+SYM_FUNC_ENTER(_aesni_encrypt8)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -449,7 +468,7 @@ SYM_FUNC_START(_aesni_encrypt8)
 	movups	(%rcx,%rax,1),%xmm0
 	addq	$16,%rax
 	jmp	.Lenc_loop8_inner
-.align	16
+.p2align	4
 .Lenc_loop8:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -497,7 +516,8 @@ SYM_FUNC_START(_aesni_encrypt8)
 SYM_FUNC_END(_aesni_encrypt8)
 
 SYM_FUNC_START(_aesni_decrypt8)
-.align	16
+SYM_FUNC_ENTER(_aesni_decrypt8)
+.p2align	4
 	movups	(%rcx),%xmm0
 	shll	$4,%eax
 	movups	16(%rcx),%xmm1
@@ -516,7 +536,7 @@ SYM_FUNC_START(_aesni_decrypt8)
 	movups	(%rcx,%rax,1),%xmm0
 	addq	$16,%rax
 	jmp	.Ldec_loop8_inner
-.align	16
+.p2align	4
 .Ldec_loop8:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -566,8 +586,8 @@ SYM_FUNC_END(_aesni_decrypt8)
 #if 0
 SYM_FUNC_START(aesni_ecb_encrypt)
 SYM_FUNC_ENTER(aesni_ecb_encrypt)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	andq	$-16,%rdx
 	jz	.Lecb_ret
@@ -593,7 +613,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	leaq	128(%rdi),%rdi
 	subq	$0x80,%rdx
 	jmp	.Lecb_enc_loop8_enter
-.align	16
+.p2align	4
 .Lecb_enc_loop8:
 	movups	%xmm2,(%rsi)
 	movq	%r11,%rcx
@@ -617,8 +637,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	leaq	128(%rdi),%rdi
 .Lecb_enc_loop8_enter:
 
-	call	_aesni_encrypt8
-
+	call	SYM_FUNC(_aesni_encrypt8)
 	subq	$0x80,%rdx
 	jnc	.Lecb_enc_loop8
 
@@ -655,7 +674,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movdqu	96(%rdi),%xmm8
 	xorps	%xmm9,%xmm9
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt8
+	call	SYM_FUNC(_aesni_encrypt8)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	movups	%xmm4,32(%rsi)
@@ -664,7 +683,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	%xmm7,80(%rsi)
 	movups	%xmm8,96(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_one:
 	movups	(%rcx),%xmm0
 	movups	16(%rcx),%xmm1
@@ -679,45 +698,45 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	aesenclast	%xmm1,%xmm2
 	movups	%xmm2,(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_two:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt2
+	call	SYM_FUNC(_aesni_encrypt2)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_three:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt3
+	call	SYM_FUNC(_aesni_encrypt3)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	movups	%xmm4,32(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_four:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt4
+	call	SYM_FUNC(_aesni_encrypt4)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	movups	%xmm4,32(%rsi)
 	movups	%xmm5,48(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_five:
 	xorps	%xmm7,%xmm7
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt6
+	call	SYM_FUNC(_aesni_encrypt6)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	movups	%xmm4,32(%rsi)
 	movups	%xmm5,48(%rsi)
 	movups	%xmm6,64(%rsi)
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_enc_six:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt6
+	call	SYM_FUNC(_aesni_encrypt6)
 	movups	%xmm2,(%rsi)
 	movups	%xmm3,16(%rsi)
 	movups	%xmm4,32(%rsi)
@@ -726,7 +745,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	%xmm7,80(%rsi)
 	jmp	.Lecb_ret
 
-.align	16
+.p2align	4
 .Lecb_decrypt:
 	cmpq	$0x80,%rdx
 	jb	.Lecb_dec_tail
@@ -742,7 +761,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	leaq	128(%rdi),%rdi
 	subq	$0x80,%rdx
 	jmp	.Lecb_dec_loop8_enter
-.align	16
+.p2align	4
 .Lecb_dec_loop8:
 	movups	%xmm2,(%rsi)
 	movq	%r11,%rcx
@@ -767,8 +786,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 .Lecb_dec_loop8_enter:
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt8
-
+	call	SYM_FUNC(_aesni_decrypt8)
 	movups	(%r11),%xmm0
 	subq	$0x80,%rdx
 	jnc	.Lecb_dec_loop8
@@ -815,7 +833,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	(%rcx),%xmm0
 	xorps	%xmm9,%xmm9
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt8
+	call	SYM_FUNC(_aesni_decrypt8)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
@@ -832,7 +850,7 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	pxor	%xmm8,%xmm8
 	pxor	%xmm9,%xmm9
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_one:
 	movups	(%rcx),%xmm0
 	movups	16(%rcx),%xmm1
@@ -848,19 +866,19 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_two:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt2
+	call	SYM_FUNC(_aesni_decrypt2)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
 	pxor	%xmm3,%xmm3
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_three:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt3
+	call	SYM_FUNC(_aesni_decrypt3)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
@@ -868,10 +886,10 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	%xmm4,32(%rsi)
 	pxor	%xmm4,%xmm4
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_four:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt4
+	call	SYM_FUNC(_aesni_decrypt4)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
@@ -881,11 +899,11 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	movups	%xmm5,48(%rsi)
 	pxor	%xmm5,%xmm5
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_five:
 	xorps	%xmm7,%xmm7
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
+	call	SYM_FUNC(_aesni_decrypt6)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
@@ -898,10 +916,10 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	pxor	%xmm6,%xmm6
 	pxor	%xmm7,%xmm7
 	jmp	.Lecb_ret
-.align	16
+.p2align	4
 .Lecb_dec_six:
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
+	call	SYM_FUNC(_aesni_decrypt6)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	movups	%xmm3,16(%rsi)
@@ -920,15 +938,15 @@ SYM_FUNC_ENTER(aesni_ecb_encrypt)
 	pxor	%xmm1,%xmm1
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ecb_encrypt)
 #endif
 
 #if 0
 SYM_FUNC_START(aesni_ccm64_encrypt_blocks)
 SYM_FUNC_ENTER(aesni_ccm64_encrypt_blocks)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	movl	240(%rcx),%eax
 	movdqu	(%r8),%xmm6
@@ -944,7 +962,7 @@ SYM_FUNC_ENTER(aesni_ccm64_encrypt_blocks)
 .byte	102,15,56,0,247
 	subq	%rax,%r10
 	jmp	.Lccm64_enc_outer
-.align	16
+.p2align	4
 .Lccm64_enc_outer:
 	movups	(%r11),%xmm0
 	movq	%r10,%rax
@@ -989,13 +1007,13 @@ SYM_FUNC_ENTER(aesni_ccm64_encrypt_blocks)
 	pxor	%xmm6,%xmm6
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ccm64_encrypt_blocks)
 
 SYM_FUNC_START(aesni_ccm64_decrypt_blocks)
 SYM_FUNC_ENTER(aesni_ccm64_decrypt_blocks)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	movl	240(%rcx),%eax
 	movups	(%r8),%xmm6
@@ -1027,7 +1045,7 @@ SYM_FUNC_ENTER(aesni_ccm64_decrypt_blocks)
 	leaq	32(%r11,%r10,1),%rcx
 	movq	%rax,%r10
 	jmp	.Lccm64_dec_outer
-.align	16
+.p2align	4
 .Lccm64_dec_outer:
 	xorps	%xmm2,%xmm8
 	movdqa	%xmm6,%xmm2
@@ -1046,7 +1064,7 @@ SYM_FUNC_ENTER(aesni_ccm64_decrypt_blocks)
 	xorps	%xmm8,%xmm3
 	movups	32(%r11),%xmm0
 	jmp	.Lccm64_dec2_loop
-.align	16
+.p2align	4
 .Lccm64_dec2_loop:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -1065,7 +1083,7 @@ SYM_FUNC_ENTER(aesni_ccm64_decrypt_blocks)
 	leaq	16(%rdi),%rdi
 	jmp	.Lccm64_dec_outer
 
-.align	16
+.p2align	4
 .Lccm64_dec_break:
 
 	movl	240(%r11),%eax
@@ -1090,15 +1108,15 @@ SYM_FUNC_ENTER(aesni_ccm64_decrypt_blocks)
 	pxor	%xmm6,%xmm6
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ccm64_decrypt_blocks)
 #endif
 
 STACK_FRAME_NON_STANDARD(aesni_ctr32_encrypt_blocks);
 SYM_FUNC_START(aesni_ctr32_encrypt_blocks)
 SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	cmpq	$1,%rdx
 	jne	.Lctr32_bulk
@@ -1127,12 +1145,12 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	xorps	%xmm2,%xmm2
 	jmp	.Lctr32_epilogue
 
-.align	16
+.p2align	4
 .Lctr32_bulk:
 	leaq	(%rsp),%r11
-.cfi_def_cfa_register	%r11
+LC_CFI(.cfi_def_cfa_register	%r11)
 	pushq	%rbp
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_offset	%rbp,-16)
 	subq	$128,%rsp
 	andq	$-16,%rsp
 	movdqu	(%r8),%xmm2
@@ -1182,7 +1200,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	leaq	7(%r8),%r9
 	movl	%r10d,96+12(%rsp)
 	bswapl	%r9d
-	movl	lc_x86_64_cpuid+4(%rip),%r10d
+	movl	SYM_FUNC(lc_x86_64_cpuid)+4(%rip),%r10d
 	xorl	%ebp,%r9d
 
 	# check bits 22 and 26 in lc_x86_64_cpuid
@@ -1205,7 +1223,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	subq	$2,%rdx
 	jmp	.Lctr32_loop8
 
-.align	16
+.p2align	4
 .Lctr32_6x:
 	shll	$4,%eax
 	movl	$48,%r10d
@@ -1214,7 +1232,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	subq	%rax,%r10
 	jmp	.Lctr32_loop6
 
-.align	16
+.p2align	4
 .Lctr32_loop6:
 	addl	$6,%r8d
 	movups	-48(%rcx,%r10,1),%xmm0
@@ -1296,7 +1314,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	shrl	$4,%eax
 	jmp	.Lctr32_tail
 
-.align	32
+.p2align	5
 .Lctr32_loop8:
 	addl	$8,%r8d
 	movdqa	96(%rsp),%xmm8
@@ -1460,7 +1478,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	movups	224-128(%rcx),%xmm0
 	jmp	.Lctr32_enc_done
 
-.align	16
+.p2align	4
 .Lctr32_enc_done:
 	movdqu	16(%rdi),%xmm11
 	pxor	%xmm0,%xmm10
@@ -1573,7 +1591,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	movups	%xmm8,96(%rsi)
 	jmp	.Lctr32_done
 
-.align	32
+.p2align	5
 .Lctr32_loop4:
 	aesenc	%xmm1,%xmm2
 	leaq	16(%rcx),%rcx
@@ -1602,7 +1620,7 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	movdqu	%xmm5,48(%rsi)
 	jmp	.Lctr32_done
 
-.align	32
+.p2align	5
 .Lctr32_loop3:
 	aesenc	%xmm1,%xmm2
 	leaq	16(%rcx),%rcx
@@ -1657,27 +1675,27 @@ SYM_FUNC_ENTER(aesni_ctr32_encrypt_blocks)
 	movaps	%xmm0,112(%rsp)
 	pxor	%xmm15,%xmm15
 	movq	-8(%r11),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	leaq	(%r11),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Lctr32_epilogue:
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ctr32_encrypt_blocks)
 
 STACK_FRAME_NON_STANDARD(aesni_xts_encrypt)
 SYM_FUNC_START(aesni_xts_encrypt)
 SYM_FUNC_ENTER(aesni_xts_encrypt)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	leaq	(%rsp),%r11
-.cfi_def_cfa_register	%r11
+LC_CFI(.cfi_def_cfa_register	%r11)
 	pushq	%rbp
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_offset	%rbp,-16)
 	pushq	%r14
-.cfi_offset	%rbp,-24
+LC_CFI(.cfi_offset	%rbp,-24)
 	subq	$112,%rsp
 	andq	$-16,%rsp
 	movups	(%r9),%xmm2
@@ -1792,7 +1810,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	.Lxts_magic(%rip),%r8
 	jmp	.Lxts_enc_grandloop
 
-.align	32
+.p2align	5
 .Lxts_enc_grandloop:
 	movdqu	0(%rdi),%xmm2
 	movdqa	%xmm0,%xmm8
@@ -1840,7 +1858,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	movdqu	%xmm8,80(%rsp)
 	pshufd	$0x5f,%xmm15,%xmm9
 	jmp	.Lxts_enc_loop6
-.align	32
+.p2align	5
 .Lxts_enc_loop6:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -2002,8 +2020,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	pxor	%xmm7,%xmm7
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt6
-
+	call	SYM_FUNC(_aesni_encrypt6)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm15,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2018,7 +2035,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	80(%rsi),%rsi
 	jmp	.Lxts_enc_done
 
-.align	16
+.p2align	4
 .Lxts_enc_one:
 	movups	(%rdi),%xmm2
 	leaq	16(%rdi),%rdi
@@ -2040,7 +2057,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	16(%rsi),%rsi
 	jmp	.Lxts_enc_done
 
-.align	16
+.p2align	4
 .Lxts_enc_two:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2049,8 +2066,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	xorps	%xmm11,%xmm3
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt2
-
+	call	SYM_FUNC(_aesni_encrypt2)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm12,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2059,7 +2075,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	32(%rsi),%rsi
 	jmp	.Lxts_enc_done
 
-.align	16
+.p2align	4
 .Lxts_enc_three:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2070,8 +2086,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	xorps	%xmm12,%xmm4
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt3
-
+	call	SYM_FUNC(_aesni_encrypt3)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm13,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2082,7 +2097,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	48(%rsi),%rsi
 	jmp	.Lxts_enc_done
 
-.align	16
+.p2align	4
 .Lxts_enc_four:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2095,8 +2110,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	xorps	%xmm13,%xmm5
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_encrypt4
-
+	call	SYM_FUNC(_aesni_encrypt4)
 	pxor	%xmm10,%xmm2
 	movdqa	%xmm14,%xmm10
 	pxor	%xmm11,%xmm3
@@ -2109,7 +2123,7 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	leaq	64(%rsi),%rsi
 	jmp	.Lxts_enc_done
 
-.align	16
+.p2align	4
 .Lxts_enc_done:
 	andq	$15,%r9
 	jz	.Lxts_enc_ret
@@ -2184,29 +2198,29 @@ SYM_FUNC_ENTER(aesni_xts_encrypt)
 	pxor	%xmm14,%xmm14
 	pxor	%xmm15,%xmm15
 	movq	-8(%r11),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	movq	-16(%r11),%r14
-.cfi_restore	%r14
+LC_CFI(.cfi_restore	%r14)
 	leaq	(%r11),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Lxts_enc_epilogue:
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_xts_encrypt)
 
 STACK_FRAME_NON_STANDARD(aesni_xts_decrypt)
 SYM_FUNC_START(aesni_xts_decrypt)
 SYM_FUNC_ENTER(aesni_xts_decrypt)
-.align	16
-.cfi_startproc
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	leaq	(%rsp),%r11
-.cfi_def_cfa_register	%r11
+LC_CFI(.cfi_def_cfa_register	%r11)
 	pushq	%rbp
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_offset	%rbp,-16)
 	pushq	%r14
-.cfi_offset	%rbp,-24
+LC_CFI(.cfi_offset	%rbp,-24)
 	subq	$112,%rsp
 	andq	$-16,%rsp
 	movups	(%r9),%xmm2
@@ -2329,7 +2343,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 
 	jmp	.Lxts_dec_grandloop
 
-.align	32
+.p2align	5
 .Lxts_dec_grandloop:
 	movdqu	0(%rdi),%xmm2
 	movdqa	%xmm0,%xmm8
@@ -2377,7 +2391,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	movdqu	%xmm8,80(%rsp)
 	pshufd	$0x5f,%xmm15,%xmm9
 	jmp	.Lxts_dec_loop6
-.align	32
+.p2align	5
 .Lxts_dec_loop6:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -2537,8 +2551,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	pxor	%xmm14,%xmm6
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
-
+	call	SYM_FUNC(_aesni_decrypt6)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm15,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2563,7 +2576,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	pxor	%xmm15,%xmm11
 	jmp	.Lxts_dec_done2
 
-.align	16
+.p2align	4
 .Lxts_dec_one:
 	movups	(%rdi),%xmm2
 	leaq	16(%rdi),%rdi
@@ -2586,7 +2599,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	leaq	16(%rsi),%rsi
 	jmp	.Lxts_dec_done
 
-.align	16
+.p2align	4
 .Lxts_dec_two:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2595,8 +2608,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	xorps	%xmm11,%xmm3
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt2
-
+	call	SYM_FUNC(_aesni_decrypt2)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm12,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2606,7 +2618,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	leaq	32(%rsi),%rsi
 	jmp	.Lxts_dec_done
 
-.align	16
+.p2align	4
 .Lxts_dec_three:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2617,8 +2629,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	xorps	%xmm12,%xmm4
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt3
-
+	call	SYM_FUNC(_aesni_decrypt3)
 	xorps	%xmm10,%xmm2
 	movdqa	%xmm13,%xmm10
 	xorps	%xmm11,%xmm3
@@ -2630,7 +2641,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	leaq	48(%rsi),%rsi
 	jmp	.Lxts_dec_done
 
-.align	16
+.p2align	4
 .Lxts_dec_four:
 	movups	(%rdi),%xmm2
 	movups	16(%rdi),%xmm3
@@ -2643,8 +2654,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	xorps	%xmm13,%xmm5
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt4
-
+	call	SYM_FUNC(_aesni_decrypt4)
 	pxor	%xmm10,%xmm2
 	movdqa	%xmm14,%xmm10
 	pxor	%xmm11,%xmm3
@@ -2658,7 +2668,7 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	leaq	64(%rsi),%rsi
 	jmp	.Lxts_dec_done
 
-.align	16
+.p2align	4
 .Lxts_dec_done:
 	andq	$15,%r9
 	jz	.Lxts_dec_ret
@@ -2754,39 +2764,39 @@ SYM_FUNC_ENTER(aesni_xts_decrypt)
 	pxor	%xmm14,%xmm14
 	pxor	%xmm15,%xmm15
 	movq	-8(%r11),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	movq	-16(%r11),%r14
-.cfi_restore	%r14
+LC_CFI(.cfi_restore	%r14)
 	leaq	(%r11),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Lxts_dec_epilogue:
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_xts_decrypt)
 
 #if 0
 SYM_FUNC_START(aesni_ocb_encrypt)
 SYM_FUNC_ENTER(aesni_ocb_encrypt)
-.align	32
-.cfi_startproc	
+.p2align	5
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	leaq	(%rsp),%rax
 	pushq	%rbx
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbx,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbx,-16)
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-24
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-24)
 	pushq	%r12
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r14,-48)
 	movq	8(%rax),%rbx
 	movq	8+8(%rax),%rbp
 
@@ -2844,7 +2854,7 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 	jc	.Locb_enc_short
 	jmp	.Locb_enc_grandloop
 
-.align	32
+.p2align	5
 .Locb_enc_grandloop:
 	movdqu	0(%rdi),%xmm2
 	movdqu	16(%rdi),%xmm3
@@ -2898,7 +2908,7 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 
 	jmp	.Locb_enc_done
 
-.align	16
+.p2align	4
 .Locb_enc_one:
 	movdqa	%xmm10,%xmm7
 
@@ -2909,7 +2919,7 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 	movups	%xmm2,0(%rsi)
 	jmp	.Locb_enc_done
 
-.align	16
+.p2align	4
 .Locb_enc_two:
 	pxor	%xmm4,%xmm4
 	pxor	%xmm5,%xmm5
@@ -2923,7 +2933,7 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 
 	jmp	.Locb_enc_done
 
-.align	16
+.p2align	4
 .Locb_enc_three:
 	pxor	%xmm5,%xmm5
 
@@ -2937,7 +2947,7 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 
 	jmp	.Locb_enc_done
 
-.align	16
+.p2align	4
 .Locb_enc_four:
 	ANNOTATE_INTRA_FUNCTION_CALL
 	call	__ocb_encrypt4
@@ -2970,28 +2980,29 @@ SYM_FUNC_ENTER(aesni_ocb_encrypt)
 	pxor	%xmm14,%xmm14
 	pxor	%xmm15,%xmm15
 	leaq	40(%rsp),%rax
-.cfi_def_cfa	%rax,8
+LC_CFI(.cfi_def_cfa	%rax,8)
 	movq	-40(%rax),%r14
-.cfi_restore	%r14
+LC_CFI(.cfi_restore	%r14)
 	movq	-32(%rax),%r13
-.cfi_restore	%r13
+LC_CFI(.cfi_restore	%r13)
 	movq	-24(%rax),%r12
-.cfi_restore	%r12
+LC_CFI(.cfi_restore	%r12)
 	movq	-16(%rax),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	movq	-8(%rax),%rbx
-.cfi_restore	%rbx
+LC_CFI(.cfi_restore	%rbx)
 	leaq	(%rax),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Locb_enc_epilogue:
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ocb_encrypt)
 
 SYM_FUNC_START(__ocb_encrypt6)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_encrypt6)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm9,%xmm15
 	movdqu	(%rbx,%r12,1),%xmm11
 	movdqa	%xmm10,%xmm12
@@ -3051,7 +3062,7 @@ SYM_FUNC_START(__ocb_encrypt6)
 	shlq	$4,%r13
 	jmp	.Locb_enc_loop6
 
-.align	32
+.p2align	5
 .Locb_enc_loop6:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -3090,12 +3101,13 @@ SYM_FUNC_START(__ocb_encrypt6)
 	aesenclast	%xmm15,%xmm7
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_encrypt6)
 
 SYM_FUNC_START(__ocb_encrypt4)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_encrypt4)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm9,%xmm15
 	movdqu	(%rbx,%r12,1),%xmm11
 	movdqa	%xmm10,%xmm12
@@ -3132,7 +3144,7 @@ SYM_FUNC_START(__ocb_encrypt4)
 	movups	64(%r11),%xmm0
 	jmp	.Locb_enc_loop4
 
-.align	32
+.p2align	5
 .Locb_enc_loop4:
 	aesenc	%xmm1,%xmm2
 	aesenc	%xmm1,%xmm3
@@ -3161,12 +3173,13 @@ SYM_FUNC_START(__ocb_encrypt4)
 	aesenclast	%xmm13,%xmm5
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_encrypt4)
 
 SYM_FUNC_START(__ocb_encrypt1)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_encrypt1)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm15,%xmm7
 	pxor	%xmm9,%xmm7
 	pxor	%xmm2,%xmm8
@@ -3181,7 +3194,7 @@ SYM_FUNC_START(__ocb_encrypt1)
 	movups	64(%r11),%xmm0
 	jmp	.Locb_enc_loop1
 
-.align	32
+.p2align	5
 .Locb_enc_loop1:
 	aesenc	%xmm1,%xmm2
 	movups	(%rcx,%rax,1),%xmm1
@@ -3198,30 +3211,30 @@ SYM_FUNC_START(__ocb_encrypt1)
 	aesenclast	%xmm7,%xmm2
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_encrypt1)
 
 SYM_FUNC_START(aesni_ocb_decrypt)
 SYM_FUNC_ENTER(aesni_ocb_decrypt)
-.align	32
-.cfi_startproc	
+.p2align	5
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	leaq	(%rsp),%rax
 	pushq	%rbx
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbx,-16
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbx,-16)
 	pushq	%rbp
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%rbp,-24
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%rbp,-24)
 	pushq	%r12
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r12,-32
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r12,-32)
 	pushq	%r13
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r13,-40
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r13,-40)
 	pushq	%r14
-.cfi_adjust_cfa_offset	8
-.cfi_offset	%r14,-48
+LC_CFI(.cfi_adjust_cfa_offset	8)
+LC_CFI(.cfi_offset	%r14,-48)
 	movq	8(%rax),%rbx
 	movq	8+8(%rax),%rbp
 
@@ -3280,7 +3293,7 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 	jc	.Locb_dec_short
 	jmp	.Locb_dec_grandloop
 
-.align	32
+.p2align	5
 .Locb_dec_grandloop:
 	movdqu	0(%rdi),%xmm2
 	movdqu	16(%rdi),%xmm3
@@ -3345,7 +3358,7 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 
 	jmp	.Locb_dec_done
 
-.align	16
+.p2align	4
 .Locb_dec_one:
 	movdqa	%xmm10,%xmm7
 
@@ -3357,7 +3370,7 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 	xorps	%xmm2,%xmm8
 	jmp	.Locb_dec_done
 
-.align	16
+.p2align	4
 .Locb_dec_two:
 	pxor	%xmm4,%xmm4
 	pxor	%xmm5,%xmm5
@@ -3373,7 +3386,7 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 
 	jmp	.Locb_dec_done
 
-.align	16
+.p2align	4
 .Locb_dec_three:
 	pxor	%xmm5,%xmm5
 
@@ -3390,7 +3403,7 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 
 	jmp	.Locb_dec_done
 
-.align	16
+.p2align	4
 .Locb_dec_four:
 	ANNOTATE_INTRA_FUNCTION_CALL
 	call	__ocb_decrypt4
@@ -3427,28 +3440,29 @@ SYM_FUNC_ENTER(aesni_ocb_decrypt)
 	pxor	%xmm14,%xmm14
 	pxor	%xmm15,%xmm15
 	leaq	40(%rsp),%rax
-.cfi_def_cfa	%rax,8
+LC_CFI(.cfi_def_cfa	%rax,8)
 	movq	-40(%rax),%r14
-.cfi_restore	%r14
+LC_CFI(.cfi_restore	%r14)
 	movq	-32(%rax),%r13
-.cfi_restore	%r13
+LC_CFI(.cfi_restore	%r13)
 	movq	-24(%rax),%r12
-.cfi_restore	%r12
+LC_CFI(.cfi_restore	%r12)
 	movq	-16(%rax),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	movq	-8(%rax),%rbx
-.cfi_restore	%rbx
+LC_CFI(.cfi_restore	%rbx)
 	leaq	(%rax),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Locb_dec_epilogue:
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_ocb_decrypt)
 
 SYM_FUNC_START(__ocb_decrypt6)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_decrypt6)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm9,%xmm15
 	movdqu	(%rbx,%r12,1),%xmm11
 	movdqa	%xmm10,%xmm12
@@ -3502,7 +3516,7 @@ SYM_FUNC_START(__ocb_decrypt6)
 	shlq	$4,%r13
 	jmp	.Locb_dec_loop6
 
-.align	32
+.p2align	5
 .Locb_dec_loop6:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -3541,12 +3555,13 @@ SYM_FUNC_START(__ocb_decrypt6)
 	aesdeclast	%xmm15,%xmm7
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_decrypt6)
 
 SYM_FUNC_START(__ocb_decrypt4)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_decrypt4)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm9,%xmm15
 	movdqu	(%rbx,%r12,1),%xmm11
 	movdqa	%xmm10,%xmm12
@@ -3579,7 +3594,7 @@ SYM_FUNC_START(__ocb_decrypt4)
 	movups	64(%r11),%xmm0
 	jmp	.Locb_dec_loop4
 
-.align	32
+.p2align	5
 .Locb_dec_loop4:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -3608,12 +3623,13 @@ SYM_FUNC_START(__ocb_decrypt4)
 	aesdeclast	%xmm13,%xmm5
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_decrypt4)
 
 SYM_FUNC_START(__ocb_decrypt1)
-.align	32
-.cfi_startproc	
+SYM_FUNC_ENTER(__ocb_decrypt1)
+.p2align	5
+LC_CFI(.cfi_startproc)
 	pxor	%xmm15,%xmm7
 	pxor	%xmm9,%xmm7
 	pxor	%xmm7,%xmm2
@@ -3627,7 +3643,7 @@ SYM_FUNC_START(__ocb_decrypt1)
 	movups	64(%r11),%xmm0
 	jmp	.Locb_dec_loop1
 
-.align	32
+.p2align	5
 .Locb_dec_loop1:
 	aesdec	%xmm1,%xmm2
 	movups	(%rcx,%rax,1),%xmm1
@@ -3644,15 +3660,15 @@ SYM_FUNC_START(__ocb_decrypt1)
 	aesdeclast	%xmm7,%xmm2
 	RET
 
-.cfi_endproc	
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(__ocb_decrypt1)
 #endif
 
 STACK_FRAME_NON_STANDARD(aesni_cbc_encrypt);
 SYM_FUNC_START(aesni_cbc_encrypt)
 SYM_FUNC_ENTER(aesni_cbc_encrypt)
-.align	16
-.cfi_startproc	
+.p2align	4
+LC_CFI(.cfi_startproc)
 .byte	243,15,30,250
 	testq	%rdx,%rdx
 	jz	.Lcbc_ret
@@ -3668,7 +3684,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	jb	.Lcbc_enc_tail
 	subq	$16,%rdx
 	jmp	.Lcbc_enc_loop
-.align	16
+.p2align	4
 .Lcbc_enc_loop:
 	movups	(%rdi),%xmm3
 	leaq	16(%rdi),%rdi
@@ -3715,7 +3731,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	xorq	%rdx,%rdx
 	jmp	.Lcbc_enc_loop
 
-.align	16
+.p2align	4
 .Lcbc_decrypt:
 	cmpq	$16,%rdx
 	jne	.Lcbc_decrypt_bulk
@@ -3741,12 +3757,12 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	jmp	.Lcbc_ret
-.align	16
+.p2align	4
 .Lcbc_decrypt_bulk:
 	leaq	(%rsp),%r11
-.cfi_def_cfa_register	%r11
+LC_CFI(.cfi_def_cfa_register	%r11)
 	pushq	%rbp
-.cfi_offset	%rbp,-16
+LC_CFI(.cfi_offset	%rbp,-16)
 	subq	$16,%rsp
 	andq	$-16,%rsp
 	movq	%rcx,%rbp
@@ -3767,7 +3783,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	movdqa	%xmm5,%xmm14
 	movdqu	80(%rdi),%xmm7
 	movdqa	%xmm6,%xmm15
-	movl	lc_x86_64_cpuid+4(%rip),%r9d
+	movl	SYM_FUNC(lc_x86_64_cpuid)+4(%rip),%r9d
 	cmpq	$0x70,%rdx
 	jbe	.Lcbc_dec_six_or_seven
 
@@ -3778,7 +3794,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	subq	$0x20,%rdx
 	leaq	112(%rcx),%rcx
 	jmp	.Lcbc_dec_loop8_enter
-.align	16
+.p2align	4
 .Lcbc_dec_loop8:
 	movups	%xmm9,(%rsi)
 	leaq	16(%rsi),%rsi
@@ -3920,7 +3936,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	aesdec	%xmm0,%xmm9
 	movups	224-112(%rcx),%xmm0
 	jmp	.Lcbc_dec_done
-.align	16
+.p2align	4
 .Lcbc_dec_done:
 	aesdec	%xmm1,%xmm2
 	aesdec	%xmm1,%xmm3
@@ -3994,7 +4010,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 
 	movaps	%xmm7,%xmm8
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
+	call	SYM_FUNC(_aesni_decrypt6)
 	pxor	%xmm10,%xmm2
 	movaps	%xmm8,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4016,12 +4032,12 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	pxor	%xmm7,%xmm7
 	jmp	.Lcbc_dec_tail_collected
 
-.align	16
+.p2align	4
 .Lcbc_dec_seven:
 	movups	96(%rdi),%xmm8
 	xorps	%xmm9,%xmm9
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt8
+	call	SYM_FUNC(_aesni_decrypt8)
 	movups	80(%rdi),%xmm9
 	pxor	%xmm10,%xmm2
 	movups	96(%rdi),%xmm10
@@ -4048,7 +4064,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	pxor	%xmm9,%xmm9
 	jmp	.Lcbc_dec_tail_collected
 
-.align	16
+.p2align	4
 .Lcbc_dec_loop6:
 	movups	%xmm7,(%rsi)
 	leaq	16(%rsi),%rsi
@@ -4068,8 +4084,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	movdqa	%xmm7,%xmm8
 
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
-
+	call	SYM_FUNC(_aesni_decrypt6)
 	pxor	%xmm10,%xmm2
 	movdqa	%xmm8,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4119,7 +4134,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	movaps	%xmm6,%xmm15
 	xorps	%xmm7,%xmm7
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt6
+	call	SYM_FUNC(_aesni_decrypt6)
 	pxor	%xmm10,%xmm2
 	movaps	%xmm15,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4140,7 +4155,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	subq	$0x10,%rdx
 	jmp	.Lcbc_dec_tail_collected
 
-.align	16
+.p2align	4
 .Lcbc_dec_one:
 	movaps	%xmm2,%xmm11
 	movups	(%rcx),%xmm0
@@ -4157,11 +4172,11 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	xorps	%xmm10,%xmm2
 	movaps	%xmm11,%xmm10
 	jmp	.Lcbc_dec_tail_collected
-.align	16
+.p2align	4
 .Lcbc_dec_two:
 	movaps	%xmm3,%xmm12
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt2
+	call	SYM_FUNC(_aesni_decrypt2)
 	pxor	%xmm10,%xmm2
 	movaps	%xmm12,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4170,11 +4185,11 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	pxor	%xmm3,%xmm3
 	leaq	16(%rsi),%rsi
 	jmp	.Lcbc_dec_tail_collected
-.align	16
+.p2align	4
 .Lcbc_dec_three:
 	movaps	%xmm4,%xmm13
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt3
+	call	SYM_FUNC(_aesni_decrypt3)
 	pxor	%xmm10,%xmm2
 	movaps	%xmm13,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4186,11 +4201,11 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	pxor	%xmm4,%xmm4
 	leaq	32(%rsi),%rsi
 	jmp	.Lcbc_dec_tail_collected
-.align	16
+.p2align	4
 .Lcbc_dec_four:
 	movaps	%xmm5,%xmm14
 	ANNOTATE_INTRA_FUNCTION_CALL
-	call	_aesni_decrypt4
+	call	SYM_FUNC(_aesni_decrypt4)
 	pxor	%xmm10,%xmm2
 	movaps	%xmm14,%xmm10
 	pxor	%xmm11,%xmm3
@@ -4206,7 +4221,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	leaq	48(%rsi),%rsi
 	jmp	.Lcbc_dec_tail_collected
 
-.align	16
+.p2align	4
 .Lcbc_dec_clear_tail_collected:
 	pxor	%xmm3,%xmm3
 	pxor	%xmm4,%xmm4
@@ -4222,7 +4237,7 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	movups	%xmm2,(%rsi)
 	pxor	%xmm2,%xmm2
 	jmp	.Lcbc_dec_ret
-.align	16
+.p2align	4
 .Lcbc_dec_tail_partial:
 	movaps	%xmm2,(%rsp)
 	pxor	%xmm2,%xmm2
@@ -4237,21 +4252,21 @@ SYM_FUNC_ENTER(aesni_cbc_encrypt)
 	xorps	%xmm0,%xmm0
 	pxor	%xmm1,%xmm1
 	movq	-8(%r11),%rbp
-.cfi_restore	%rbp
+LC_CFI(.cfi_restore	%rbp)
 	leaq	(%r11),%rsp
-.cfi_def_cfa_register	%rsp
+LC_CFI(.cfi_def_cfa_register	%rsp)
 .Lcbc_ret:
 	RET
 
-.cfi_endproc
+LC_CFI(.cfi_endproc)
 SYM_FUNC_END(aesni_cbc_encrypt)
 
 STACK_FRAME_NON_STANDARD(aesni_set_decrypt_key);
 SYM_FUNC_START(aesni_set_decrypt_key)
 SYM_FUNC_ENTER(aesni_set_decrypt_key)
-.align	16
+.p2align	4
 .byte	0x48,0x83,0xEC,0x08
-	call	aesni_set_encrypt_key
+	call	SYM_FUNC(aesni_set_encrypt_key)
 	shll	$4,%esi
 	testl	%eax,%eax
 	jnz	.Ldec_key_ret
@@ -4290,7 +4305,7 @@ SYM_FUNC_END(aesni_set_decrypt_key)
 STACK_FRAME_NON_STANDARD(aesni_set_encrypt_key);
 SYM_FUNC_START(aesni_set_encrypt_key)
 SYM_FUNC_ENTER(aesni_set_encrypt_key)
-.align	16
+.p2align	4
 .byte	0x48,0x83,0xEC,0x08
 	movq	$-1,%rax
 	testq	%rdi,%rdi
@@ -4302,7 +4317,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	movl	$268437504,%r10d
 	movups	(%rdi),%xmm0
 	xorps	%xmm4,%xmm4
-	andl	lc_x86_64_cpuid+4(%rip),%r10d
+	andl	SYM_FUNC(lc_x86_64_cpuid)+4(%rip),%r10d
 	leaq	16(%rdx),%rax
 	cmpl	$256,%esi
 	je	.L14rounds
@@ -4352,7 +4367,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorl	%eax,%eax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .L10rounds_alt:
 	movdqa	.Lkey_rotate(%rip),%xmm5
 	movl	$8,%r10d
@@ -4361,7 +4376,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	movdqu	%xmm0,(%rdx)
 	jmp	.Loop_key128
 
-.align	16
+.p2align	4
 .Loop_key128:
 .byte	102,15,56,0,197
 	aesenclast	%xmm4,%xmm0
@@ -4419,7 +4434,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorl	%eax,%eax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .L12rounds:
 	movq	16(%rdi),%xmm2
 	movl	$11,%esi
@@ -4456,7 +4471,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorq	%rax,%rax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .L12rounds_alt:
 	movdqa	.Lkey_rotate192(%rip),%xmm5
 	movdqa	.Lkey_rcon1(%rip),%xmm4
@@ -4464,7 +4479,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	movdqu	%xmm0,(%rdx)
 	jmp	.Loop_key192
 
-.align	16
+.p2align	4
 .Loop_key192:
 	movq	%xmm2,0(%rax)
 	movdqa	%xmm2,%xmm1
@@ -4497,7 +4512,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorl	%eax,%eax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .L14rounds:
 	movups	16(%rdi),%xmm2
 	movl	$13,%esi
@@ -4551,7 +4566,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorq	%rax,%rax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .L14rounds_alt:
 	movdqa	.Lkey_rotate(%rip),%xmm5
 	movdqa	.Lkey_rcon1(%rip),%xmm4
@@ -4561,7 +4576,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	movdqu	%xmm2,16(%rdx)
 	jmp	.Loop_key256
 
-.align	16
+.p2align	4
 .Loop_key256:
 .byte	102,15,56,0,213
 	aesenclast	%xmm4,%xmm2
@@ -4605,7 +4620,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorl	%eax,%eax
 	jmp	.Lenc_key_ret
 
-.align	16
+.p2align	4
 .Lbad_keybits:
 	movq	$-2,%rax
 .Lenc_key_ret:
@@ -4619,7 +4634,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	RET
 .LSEH_end_set_encrypt_key:
 
-.align	16
+.p2align	4
 .Lkey_expansion_128:
 	movups	%xmm0,(%rax)
 	leaq	16(%rax),%rax
@@ -4632,7 +4647,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	xorps	%xmm1,%xmm0
 	RET
 
-.align	16
+.p2align	4
 .Lkey_expansion_192a:
 	movups	%xmm0,(%rax)
 	leaq	16(%rax),%rax
@@ -4652,7 +4667,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	pxor	%xmm3,%xmm2
 	RET
 
-.align	16
+.p2align	4
 .Lkey_expansion_192b:
 	movaps	%xmm0,%xmm3
 	shufps	$68,%xmm0,%xmm5
@@ -4662,7 +4677,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	leaq	32(%rax),%rax
 	jmp	.Lkey_expansion_192b_warm
 
-.align	16
+.p2align	4
 .Lkey_expansion_256a:
 	movups	%xmm2,(%rax)
 	leaq	16(%rax),%rax
@@ -4676,7 +4691,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 	RET
 
 
-.align	16
+.p2align	4
 .Lkey_expansion_256b:
 	movups	%xmm0,(%rax)
 	leaq	16(%rax),%rax
@@ -4691,7 +4706,7 @@ SYM_FUNC_ENTER(aesni_set_encrypt_key)
 SYM_FUNC_END(aesni_set_encrypt_key)
 
 .data
-.align	64
+.p2align	6
 .Lbswap_mask:
 .byte	15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0
 .Lincrement32:
@@ -4712,6 +4727,6 @@ SYM_FUNC_END(aesni_set_encrypt_key)
 .long	0x1b,0x1b,0x1b,0x1b
 
 .byte	65,69,83,32,102,111,114,32,73,110,116,101,108,32,65,69,83,45,78,73,44,32,67,82,89,80,84,79,71,65,77,83,32,98,121,32,60,97,112,112,114,111,64,111,112,101,110,115,115,108,46,111,114,103,62,0
-.align	64
+.p2align	6
 
 LC_ASM_END
