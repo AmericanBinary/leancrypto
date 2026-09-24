@@ -33,10 +33,12 @@ extern "C" {
  * Size of the deterministic-IV anti-reuse window in 64-bit words. The
  * window tolerates encryption invocations arriving up to
  * (LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 - 1) counter values behind the
- * highest value seen, each accepted exactly once. 64 words = 4096
- * bits, sized for parallel encryption pipelines with deep queues.
+ * highest value seen, each accepted exactly once. 256 words = 16384
+ * bits (2 KiB per context), sized so that an encryption worker
+ * stalled by scheduling or garbage collection while its peers
+ * continue at packet rate still lands inside the window.
  */
-#define LC_AES_GCM_DET_IV_WINDOW_WORDS 64
+#define LC_AES_GCM_DET_IV_WINDOW_WORDS 256
 
 struct lc_gcm_ctx {
 	uint64_t len; // cipher data length processed so far
@@ -143,7 +145,8 @@ enum lc_aes_gcm_iv_type {
  *   8.3 for a given key: the fixed field is bound to the context on first
  *   use, and the invocation field is tracked with an anti-reuse window
  *   (compare RFC 6479) - values above the highest seen counter are
- *   accepted, values within the trailing 64-value window are accepted
+ *   accepted, values within the trailing anti-reuse window
+ *   (LC_AES_GCM_DET_IV_WINDOW_WORDS * 64 values) are accepted
  *   exactly once, and older or repeated values are rejected. This
  *   supports encryption pipelines that process messages out of order
  *   while never permitting an invocation field to repeat. A violation
