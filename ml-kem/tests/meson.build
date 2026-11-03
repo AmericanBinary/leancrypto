@@ -85,6 +85,15 @@ if get_option('kyber_1024').enabled()
 				], dependencies: leancrypto
 				)
 
+	kyber_enc_rng_tester = executable('kyber_enc_rng_tester',
+				[ 'kyber_enc_rng_tester.c', internal_src ],
+				include_directories: [
+					include_dirs,
+					include_internal_dirs,
+					include_kyber_internal
+				], dependencies: leancrypto
+				)
+
 	# Testing of ML-KEM keygen in FIPS mode (power up integrity test and
 	# PCT)
 	kyber_keygen_fips_tester = executable('kyber_keygen_fips_tester',
@@ -135,6 +144,9 @@ if get_option('kyber_1024').enabled()
 	     should_fail: fips140_negative_expect_fail)
 	test('Kyber Keygen Performance', kyber_keygen_tester, timeout: 1000,
 	     is_parallel: false, suite: performance)
+	test('Kyber Encapsulation with caller RNG', kyber_enc_rng_tester,
+	     suite: regression,
+	     should_fail: fips140_negative_expect_fail)
 	test('Kyber Keygen FIPS', kyber_keygen_fips_tester, suite: regression,
 	     should_fail: fips140_negative_expect_fail)
 	test('Kyber Modulus Test Accel', kyber_modulus_tester,
