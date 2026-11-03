@@ -138,6 +138,7 @@ extern "C" {
 #define lc_kyber_pk_from_sk KYBER_F(pk_from_sk)
 #define lc_kyber_keypair_from_seed KYBER_F(keypair_from_seed)
 #define lc_kyber_enc KYBER_F(enc)
+#define lc_kyber_enc_rng KYBER_F(enc_rng)
 #define lc_kyber_dec KYBER_F(dec)
 #define lc_kyber_enc_kdf KYBER_F(enc_kdf)
 #define lc_kyber_dec_kdf KYBER_F(dec_kdf)

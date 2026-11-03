@@ -240,6 +240,28 @@ int @kyber_name@_enc(struct @kyber_name@_ct *ct, struct @kyber_name@_ss *ss,
 		 const struct @kyber_name@_pk *pk);
 
 /**
+ * @brief @kyber_name@_enc_rng - Key encapsulation with a caller-provided RNG
+ *
+ * Same as @kyber_name@_enc, but the encapsulation randomness is drawn from
+ * the given RNG context instead of lc_seeded_rng. A multi-threaded caller can
+ * give each thread its own seeded DRBG and avoid contending on the shared
+ * seeded RNG. The caller is responsible for the RNG being properly seeded
+ * (and, in a FIPS context, being an approved DRBG).
+ *
+ * @param [out] ct pointer to output cipher text to used for decapsulation
+ * @param [out] ss pointer to output shared secret that will be also produced
+ *		   during decapsulation
+ * @param [in] pk pointer to input public key
+ * @param [in] rng_ctx RNG context; NULL selects lc_seeded_rng
+ *
+ * Returns 0 (success) or < 0 on error
+ */
+int @kyber_name@_enc_rng(struct @kyber_name@_ct *ct,
+			 struct @kyber_name@_ss *ss,
+			 const struct @kyber_name@_pk *pk,
+			 struct lc_rng_ctx *rng_ctx);
+
+/**
  * @brief @kyber_name@_enc_kdf - Key encapsulation with KDF applied to shared secret
  *
  * Generates cipher text and shared secret for given public key. The shared

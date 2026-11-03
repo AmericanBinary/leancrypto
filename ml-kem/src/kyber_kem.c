@@ -28,6 +28,7 @@
 
 #include "kyber_debug.h"
 #include "kyber_kdf.h"
+#include "kyber_internal.h"
 #include "kyber_kem.h"
 #include "kyber_pct.h"
 #include "lc_hash.h"
@@ -352,4 +353,13 @@ int _lc_kyber_dec_kdf(
 out:
 	lc_memset_secure(&kyber_ss, 0, sizeof(kyber_ss));
 	return ret;
+}
+
+LC_INTERFACE_FUNCTION(int, lc_kyber_enc_rng, struct lc_kyber_ct *ct,
+		      struct lc_kyber_ss *ss, const struct lc_kyber_pk *pk,
+		      struct lc_rng_ctx *rng_ctx)
+{
+	/* Same path as lc_kyber_enc (self-test, implementation selection),
+	 * with the caller's RNG; NULL falls back to lc_seeded_rng. */
+	return lc_kyber_enc_internal(ct, ss, pk, rng_ctx);
 }
