@@ -319,7 +319,12 @@ static inline int mlock(const void *ptr, size_t len)
 	return 0;
 }
 
+/* The sysv_abi calling convention only exists on x86_64 */
+#ifdef __x86_64__
 #define SYSV_ABI __attribute__((sysv_abi))
+#else
+#define SYSV_ABI
+#endif
 
 /*
  * See https://gcc.gnu.org/onlinedocs/gcc/Statement-Attributes.html#Statement-Attributes
