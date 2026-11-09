@@ -22,6 +22,25 @@
 #include "ext_headers_arm.h"
 #include "visibility.h"
 
+#if defined(_WIN32)
+#include <windows.h>
+
+/*
+ * The SHA-3 and SHA-512 processor feature numbers were added with the
+ * Windows 11 24H2 SDK. mingw-w64 headers older than late 2025 (including
+ * the llvm-mingw 20250709 toolchain) do not define them, so provide the
+ * values from the Windows SDK. IsProcessorFeaturePresent() returns FALSE
+ * for feature numbers an older kernel does not know, which leaves the
+ * corresponding acceleration disabled instead of faulting.
+ */
+#ifndef PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE 64
+#endif
+#ifndef PF_ARM_SHA512_INSTRUCTIONS_AVAILABLE
+#define PF_ARM_SHA512_INSTRUCTIONS_AVAILABLE 65
+#endif
+#endif /* _WIN32 */
+
 /*
  * Read the feature register ID_AA64ISAR0_EL1
  *
@@ -92,6 +111,23 @@ static inline unsigned long arm_id_aa64isar0_el1_feature(void)
 		if (ret)
 			id_aa64isar0_el1_val |= ARM8_PMULL_FEATURE;
 	}
+
+#elif defined(_WIN32)
+	/*
+	 * ID_AA64ISAR0_EL1 is an EL1 register. Linux traps and emulates the
+	 * MRS from user space, Windows does not and the read raises
+	 * STATUS_ILLEGAL_INSTRUCTION (0xC000001D). Ask the kernel instead.
+	 */
+	if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
+		id_aa64isar0_el1_val |= ARM8_SHA256_FEATURE | ARM8_AES_FEATURE |
+					ARM8_PMULL_FEATURE;
+
+	if (IsProcessorFeaturePresent(PF_ARM_SHA512_INSTRUCTIONS_AVAILABLE))
+		id_aa64isar0_el1_val |= ARM8_SHA256512_FEATURE;
+
+	if (IsProcessorFeaturePresent(PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE))
+		id_aa64isar0_el1_val |= ARM8_SHA3_FEATURE;
+
 #else
 	__asm__ __volatile__("mrs %0, id_aa64isar0_el1 \n"
 			     : "=r"(id_aa64isar0_el1_val));
